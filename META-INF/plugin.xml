@@ -28,6 +28,7 @@
         <!-- Add your extensions here -->
         <treeStructureProvider
                 implementation="tree.TextOnlyTreeStructureProvider"/>
+        <iconProvider implementation="tree.MyIconProvider"/>
     </extensions>
 
     <application-components>
