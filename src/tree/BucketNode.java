@@ -12,13 +12,13 @@ public class BucketNode extends PsiFileNode {
 
     private String modifiedTitle;
 
-    public BucketNode(Project project, PsiFile value, ViewSettings viewSettings) {
-        super(project, value, viewSettings);
+    public BucketNode(PsiFileNode psiFileNode,ViewSettings viewSettings) {
+        super(psiFileNode.getProject(), psiFileNode.getValue(), viewSettings);
     }
 
     public void setHasComment(Boolean hasComment) {
         String icon = hasComment ? "[C]" : "";
-        modifiedTitle = String.format("%s%s", getTitle(), icon);
+        modifiedTitle = String.format("%s%s", super.getTitle(), icon);
     }
 
     @Override
