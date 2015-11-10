@@ -37,4 +37,7 @@ So that I can save time and sanity
 Feature: 
 As a reviewer 
 I want to provide feedback on a PR without switching contexts
-So that I can save time and sanity 
+So that I can save time and sanity
+
+### Mock Ups ###
+[Available here.](https://confluence.atlassian.com/bitbucket/pullrequests-resource-1-0-296095210.html#pullrequestsResource1.0-POSTanewcomment)
