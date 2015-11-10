@@ -35,13 +35,13 @@ Evolab project to view and post BitBucket pull request comments in IntelliJ.
     * See [API documentation](https://confluence.atlassian.com/bitbucket/pullrequests-resource-1-0-296095210.html#pullrequestsResource1.0-POSTanewcomment)
 
 ### User stories ###
-Feature: 
-  * As an author  
-    I want to integrate PR feedback into my git branch without switching contexts  
-    So that I can save time and sanity
-  * As a reviewer  
-    I want to provide feedback on a PR without switching contexts  
-    So that I can save time and sanity
+
+* As an author  
+  I want to integrate PR feedback into my git branch without switching contexts  
+  So that I can save time and sanity
+* As a reviewer  
+  I want to provide feedback on a PR without switching contexts  
+  So that I can save time and sanity
 
 ### Mock Ups ###
 
