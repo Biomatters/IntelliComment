@@ -14,3 +14,15 @@ Evolab project to integrate bitbucket comments into IntelliJ.
 ### Who do I talk to? ###
 
 * Owen
+
+### Task List ###
+1. Open source question
+    * Does biomatters have a github account? 
+1. User stories
+    * Review perspective
+    * Author perspective
+1. Mock ups (via screenshots)
+1. Try out jet brains comment system
+1. Technical plan & build
+    * Review and improve wiki
+    * Assign jobs for evolab
