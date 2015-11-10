@@ -1,11 +1,12 @@
 package bitbucket;
 
 /**
- * Created by the Biomatters and the Phyla team for the betterment of mankind.
+ * Created by the Biomatters and the Webapps Team for the betterment of mankind.
  */
 public class Config {
+    // TODO Where should this stuff be stored? XML of some kind?
 
-    public final static String BITBUCKET_URL = "https://bitbucket.org/api/1.0";
+    public final static String BITBUCKET_URL = "https://bitbucket.org/api";
 
     public static String APP_KEY = "EkdP4yeMRaMKPBLcBv";
     public static String APP_SECRET = "hRJHdSX4LJyWCsYwyCLetnNUU8Ups4C3";

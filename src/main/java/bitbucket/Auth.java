@@ -1,5 +1,6 @@
 package bitbucket;
 
+import bitbucket.models.AccessTokenResponse;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.ws.rs.client.ClientBuilder;
@@ -25,25 +26,29 @@ public class Auth {
     private static String ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token";
 
     public Auth() {
-            // Start server to wait for bitbucket response from the OAuth process.
-            authenticateUser();
+        // Start server to wait for bitbucket response from the OAuth process.
+        authenticateUser();
 
-            // Prompt the user to enter their details.
-            promptUserForCredentials();
+        // Prompt the user to enter their details.
+        promptUserForCredentials();
     }
 
+    private static boolean running = false;
+
     private void promptUserForCredentials() {
-        if (Desktop.isDesktopSupported()) {
-            try {
-                String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.APP_KEY);
-                Desktop.getDesktop().browse(new URI(urlString));
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
+        // Prevent multiple requests. TODO What's the best way to do this in java? - Current implementation doesn't work.
+        if (!running) {
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.APP_KEY);
+                    Desktop.getDesktop().browse(new URI(urlString));
+                } catch (IOException | URISyntaxException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
+
 
     /**
      * Starts a simple server for callbacks during OAuth.
@@ -52,8 +57,9 @@ public class Auth {
      */
     private void authenticateUser() {
         Thread listener = new Thread() {
-
             public void run() {
+                // Open a listener on port 5000 and then continuously listen for authentication.
+                // TODO Only use this when needed, but for a demo is probably OK as is.
                 String authCode = listenForAndGetOAuthCode();
 
                 getAndSaveAccessToken(authCode);
@@ -77,7 +83,10 @@ public class Auth {
     }
 
     public String listenForAndGetOAuthCode() {
-        Socket sock = null;
+        // TODO Improve this approach, maybe using ExecutorCompletionService?
+        // @see http://stackoverflow.com/questions/7939257/wait-until-all-threads-finish-their-work-in-java
+        Socket sock;
+        String code;
         try {
             // Note that the Port=5000 is set in the bitbucket config, and
             // our client must match that here.
@@ -86,12 +95,18 @@ public class Auth {
             InputStream is = sock.getInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             String urlPath = br.readLine();
-            String code = getOAuthCodeFromHttpGet(urlPath);
-            sock.close();
-            return code;
+            code = getOAuthCodeFromHttpGet(urlPath);
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
+        // Always need to close the socket.
+        try {
+            sock.close();
+        } catch (IOException ignored) {
+            // Fail silently, this is only clean up.
+        }
+        running = false;
+        return code;
     }
 
     private void getAndSaveAccessToken(String code) {

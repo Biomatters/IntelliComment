@@ -17,6 +17,7 @@ public class BucketNode extends PsiFileNode {
     }
 
     public void setHasComment(Boolean hasComment) {
+        //TODO Make "C" a number.
         String icon = hasComment ? "[C]" : "";
         modifiedTitle = String.format("%s%s", getTitle(), icon);
     }

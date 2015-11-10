@@ -5,6 +5,7 @@ import com.intellij.ide.projectView.TreeStructureProvider;
 import com.intellij.ide.projectView.ViewSettings;
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode;
 import com.intellij.ide.util.treeView.AbstractTreeNode;
+import git.Git;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,8 +21,12 @@ public class IntelliBucketTreeStructureProvider implements TreeStructureProvider
     @Override
     public Collection<AbstractTreeNode> modify(AbstractTreeNode parent, Collection<AbstractTreeNode> children, ViewSettings settings) {
 
-        // TODO Get main.bitbucket comments here.
-        CommentManager commentManager = new CommentManager("intellibucket","OwenLCBodley");
+        Git git = new Git();
+        String branch = git.getCurrentBranch();
+        String userName = git.getUserName();
+        String repoSlug = git.getRepoSlug();
+
+        CommentManager commentManager = new CommentManager(repoSlug, userName,branch);
         commentManager.get(1);
 
         ArrayList<AbstractTreeNode> nodes = new ArrayList<AbstractTreeNode>();
