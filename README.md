@@ -18,6 +18,8 @@ Evolab project to integrate bitbucket comments into IntelliJ.
 ### Task List ###
 1. Open source question
     * Does biomatters have a github account? 
+1. Think of a good name for open source
+    * Repo can be `{name} Jet Brains Plugin`, but the name should not include `Jet Brains`.
 1. User stories √
     * Review perspective √
     * Author perspective √
