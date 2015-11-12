@@ -17,7 +17,7 @@ Evolab project to view and post BitBucket pull request comments in IntelliJ.
 
 ### Who do I talk to? ###
 
-* Megan / Steve / Alex / Owen
+* Megan / Steve / Alex / Bevan / Owen
 
 ### Task List ###
 1. Is this an open source product (Steve)
