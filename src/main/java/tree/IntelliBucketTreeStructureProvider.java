@@ -1,8 +1,10 @@
 package tree;
 
 import bitbucket.CommentManager;
+import bitbucket.models.Comment;
 import com.intellij.ide.projectView.TreeStructureProvider;
 import com.intellij.ide.projectView.ViewSettings;
+import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode;
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode;
 import com.intellij.ide.util.treeView.AbstractTreeNode;
 import git.Git;
@@ -11,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by the Biomatters and the Phyla team for the betterment of mankind.
@@ -21,21 +24,23 @@ public class IntelliBucketTreeStructureProvider implements TreeStructureProvider
     @Override
     public Collection<AbstractTreeNode> modify(AbstractTreeNode parent, Collection<AbstractTreeNode> children, ViewSettings settings) {
 
-        Git git = new Git();
-        String branch = git.getCurrentBranch();
-        String userName = git.getUserName();
-        String repoSlug = git.getRepoSlug();
-
-        CommentManager commentManager = new CommentManager(repoSlug, userName,branch);
-        commentManager.get(1);
+        List<Comment> comments = CommentsRepo.getComments();
 
         ArrayList<AbstractTreeNode> nodes = new ArrayList<AbstractTreeNode>();
         children.stream().filter(child -> child instanceof PsiFileNode).forEach(child -> {
+
             BucketNode psiFileNode = new BucketNode(child.getProject(), ((PsiFileNode) child).getValue(), settings);
             psiFileNode.setHasComment(true);
             nodes.add(psiFileNode);
         });
-        return nodes;
+
+        children.stream().filter(child -> child instanceof PsiDirectoryNode).forEach(child -> {
+            BucketDirectoryNode bucketDirectoryNode = new BucketDirectoryNode(child.getProject(), ((PsiDirectoryNode) child).getValue(), settings);
+            child = bucketDirectoryNode;
+        });
+
+
+        return children;
     }
 
     @Nullable

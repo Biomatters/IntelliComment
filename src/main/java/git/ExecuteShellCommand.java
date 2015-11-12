@@ -1,5 +1,8 @@
 package git;
 
+import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.vfs.VirtualFile;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
