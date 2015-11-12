@@ -15,5 +15,6 @@ Evolab project to view and post BitBucket pull request comments in IntelliJ.
 1. Create a plugin run config. Go to `Run > Edit Configurations` then in the tree, click the `+` button and choose type `Plugin`. Click apply, ok.
 
 Hacky things that you have to do until gradle is nicely integrated. TODO Fix this. 
+
 1. Maybe run `gradle compileJava`. This will fail but it will get the dependencies. You can run this task from the gradle sidebar > other > compileJava.
 1. Navigate to project structure / modules, changed `Use module compile...` to `Inherit compiler...`.
