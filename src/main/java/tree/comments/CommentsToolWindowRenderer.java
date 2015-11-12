@@ -1,4 +1,4 @@
-package tree;
+package tree.comments;
 
 import bitbucket.models.Comment;
 import com.intellij.openapi.actionSystem.AnAction;

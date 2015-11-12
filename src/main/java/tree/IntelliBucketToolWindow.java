@@ -8,6 +8,7 @@ import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentManager;
 import org.jetbrains.annotations.NotNull;
+import tree.comments.CommentsToolWindowRenderer;
 
 /**
  * Created by the Biomatters and the Webapps Team for the betterment of mankind.
