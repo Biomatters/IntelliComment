@@ -1,7 +1,9 @@
 package tree;
 
+import bitbucket.CommentsService;
 import bitbucket.models.Comment;
 import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.TextAnnotationGutterProvider;
 import com.intellij.openapi.editor.colors.ColorKey;
@@ -171,6 +173,6 @@ public class CommentsToolWindowRenderer extends JComponent {
     private List<Comment> getCommentsForFile(Editor editor) {
 
         String fileName = ((EditorImpl) editor).getVirtualFile().toString();
-        return CommentsRepo.getComments();
+        return ServiceManager.getService(CommentsService.class).getComments();
     }
 }
