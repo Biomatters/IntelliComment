@@ -1,7 +1,10 @@
 package bitbucket;
 
 import bitbucket.models.Comment;
+import bitbucket.models.V2PullRequest;
 import bitbucket.models.V2Response;
+import tree.GitStatusInfo;
+import tree.IntellijUtilities;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
@@ -58,7 +61,7 @@ public class CommentManager {
      * Searches these for a branch which matches that passed in. If matches then returns the id for that PR.
      * TODO If there are multiple for the same branch, will take the most recent open branch.
      *
-     * @return
+     * @return the current pull request's id, or -1 if there is no pull request for this branch
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-423626332.html#pullrequestsResource-GETalistofopenpullrequests
      */
     int getCurrentPullRequest() {
@@ -83,7 +86,15 @@ public class CommentManager {
 
 //        response.getValues().stream().filter(repo ->repo.).collect(V2Response.class);
 
-        return response.getValues().get(0).getId();
+        GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
+        if (gitStatusInfo != null) {
+            for (V2PullRequest pullRequest : response.getValues()) {
+                if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
+                    return pullRequest.getId();
+                }
+            }
+        }
+        return -1;
     }
 
     /**

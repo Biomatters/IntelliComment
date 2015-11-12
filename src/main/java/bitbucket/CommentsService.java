@@ -55,7 +55,8 @@ public class CommentsService {
         if (gitStatusInfo != null) {
             CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner,
                     gitStatusInfo.branch);
-            comments = commentManager.get(174);
+            int currentPullRequest = commentManager.getCurrentPullRequest();
+            comments = commentManager.get(currentPullRequest);
         } else {
             comments = Collections.emptyList();
         }
