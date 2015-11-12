@@ -17,22 +17,7 @@ public class IntelliBucketToolWindow implements ToolWindowFactory {
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         final ContentManager contentManager = toolWindow.getContentManager();
 
-//        JBList list = new JBList();
-//        list.setListData(CommentsRepo.getComments().toArray());
-//
-//        list.setCellRenderer((list1, value, index, isSelected, cellHasFocus) -> {
-//
-//            Comment comment = (Comment)value;
-//            JLabel label = new JLabel();
-//            label.setText(comment.getContent());
-//
-//            return label;
-//        });
-//
-//        list.setBackground(Color.orange);
-
         CommentsToolWindowRenderer commentsToolWindowRenderer = new CommentsToolWindowRenderer(FileEditorManager.getInstance(project));
-
 
         final Content content = contentManager.getFactory().createContent(new JBScrollPane(commentsToolWindowRenderer), "Comments", false);
         contentManager.addContent(content);

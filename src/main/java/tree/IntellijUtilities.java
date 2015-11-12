@@ -9,13 +9,13 @@ import com.intellij.openapi.vcs.AbstractVcs;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.vcs.log.VcsUser;
 import com.intellij.vcsUtil.VcsUtil;
-import git4idea.GitUserRegistry;
 import git4idea.GitVcs;
 import git4idea.branch.GitBranchUtil;
 import git4idea.repo.GitRemote;
 import git4idea.repo.GitRepository;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.regex.Matcher;
@@ -64,7 +64,7 @@ public class IntellijUtilities {
             return null;
         }
 
-        return new GitStatusInfo(user, repositorySlug, branch);
+        return new GitStatusInfo(repositorySlug, user, branch);
     }
 
     private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://([^@]*)@bitbucket\\..*/([^/]*)\\.git");
@@ -72,20 +72,27 @@ public class IntellijUtilities {
     /**
      * @return the current user name, if discoverable, else null
      */
-    public static @Nullable String determineBitBucketUserName(Collection<GitRemote> remotes) {
+    public static
+    @Nullable
+    String determineBitBucketUserName(Collection<GitRemote> remotes) {
         return getPortionOfBitbucketUrl(remotes, 1);
     }
 
     /**
      * Determines the bitbucket repo slug; that is, the project name. Ensures that the url of the remote is a bitbucket url.
+     *
      * @param remotes the remotes listed for a git repository.
      * @return the repo slug, if determinable, else null
      */
-    public static @Nullable String determineBitBucketSlug(Collection<GitRemote> remotes) {
+    public static
+    @Nullable
+    String determineBitBucketSlug(Collection<GitRemote> remotes) {
         return getPortionOfBitbucketUrl(remotes, 2);
     }
 
-    public static @Nullable String getPortionOfBitbucketUrl(Collection<GitRemote> remotes, int group) {
+    public static
+    @Nullable
+    String getPortionOfBitbucketUrl(Collection<GitRemote> remotes, int group) {
         Iterator<GitRemote> remotesIter = remotes.iterator();
         if (!remotesIter.hasNext()) {
             return null;
@@ -116,6 +123,17 @@ public class IntellijUtilities {
             Project currentProject = IntellijUtilities.getCurrentProject();
             if (currentProject != null) {
                 AbstractVcs vcs = VcsUtil.getVcsFor(currentProject, virtualFile);
+
+                // Attempt #2
+//                try {
+//                    Method method = GitBranchUtil.class.getMethod("getCurrentRepository", new Class[]{});
+//                    method.invoke(GitBranchUtil, new Object[]{});
+//                } catch (NoSuchMethodException e) {
+//                    e.printStackTrace();
+//                }
+//
+                // Attempt #1
+                 //Thread.currentThread().setContextClassLoader(currentProject.getClass().getClassLoader());
                 if (vcs instanceof GitVcs) {
                     return GitBranchUtil.getCurrentRepository(currentProject);
                 }
