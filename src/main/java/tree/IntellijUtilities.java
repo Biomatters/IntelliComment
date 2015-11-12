@@ -41,7 +41,7 @@ public class IntellijUtilities {
     @Nullable
     GitStatusInfo getGitStatusInfo() {
 
-        String user = getCurrentUserName();
+        String user = null;
         String repositorySlug = null;
         String branch = null;
 
@@ -53,6 +53,9 @@ public class IntellijUtilities {
 
             // Determine the repo slug
             repositorySlug = determineBitBucketSlug(gitRepository.getInfo().getRemotes());
+
+            // Determine the username
+            user = determineBitBucketUserName(gitRepository.getInfo().getRemotes());
         }
 
         // intellij reckons branch can never be null. It clearly can be, though...
@@ -64,7 +67,14 @@ public class IntellijUtilities {
         return new GitStatusInfo(user, repositorySlug, branch);
     }
 
-    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://[^@]*@bitbucket\\..*/([^/]*)\\.git");
+    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://([^@]*)@bitbucket\\..*/([^/]*)\\.git");
+
+    /**
+     * @return the current user name, if discoverable, else null
+     */
+    public static @Nullable String determineBitBucketUserName(Collection<GitRemote> remotes) {
+        return getPortionOfBitbucketUrl(remotes, 1);
+    }
 
     /**
      * Determines the bitbucket repo slug; that is, the project name. Ensures that the url of the remote is a bitbucket url.
@@ -72,6 +82,10 @@ public class IntellijUtilities {
      * @return the repo slug, if determinable, else null
      */
     public static @Nullable String determineBitBucketSlug(Collection<GitRemote> remotes) {
+        return getPortionOfBitbucketUrl(remotes, 2);
+    }
+
+    public static @Nullable String getPortionOfBitbucketUrl(Collection<GitRemote> remotes, int group) {
         Iterator<GitRemote> remotesIter = remotes.iterator();
         if (!remotesIter.hasNext()) {
             return null;
@@ -82,24 +96,9 @@ public class IntellijUtilities {
             Matcher matcher = BITBUCKET_REPO_PATTERN.matcher(firstUrl);
             if (matcher.matches()) {
                 //noinspection UnnecessaryLocalVariable
-                String group = matcher.group(1);
-                return group;
+                String value = matcher.group(group);
+                return value;
             }
-        }
-        return null;
-    }
-
-    /**
-     *
-     * @return the current user name, if discoverable, else null
-     */
-    public static @Nullable String getCurrentUserName() {
-        // Determine the current user
-        GitUserRegistry userRegistry = ServiceManager.getService(getCurrentProject(), GitUserRegistry.class);
-        Project project = getCurrentProject();
-        VcsUser vcsUser = userRegistry.getOrReadUser(project.getBaseDir());
-        if (vcsUser != null) {
-            return vcsUser.getName();
         }
         return null;
     }
