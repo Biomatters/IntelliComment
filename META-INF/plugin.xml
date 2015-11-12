@@ -29,6 +29,7 @@
       <treeStructureProvider
                 implementation="tree.IntelliBucketTreeStructureProvider"/>
       <appStarter implementation="tree.BucketStarter" />
+    <fileIconProvider implementation="tree.prettyFileIconProvider"/>
 
       <toolWindow id="IntelliBucket" anchor="right" factoryClass="tree.IntelliBucketToolWindow" order="FIRST" canCloseContents="false" conditionClass="tree.IntelliBucketConditionClass"/>
     </extensions>

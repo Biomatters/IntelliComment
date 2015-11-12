@@ -1,15 +1,13 @@
 package tree;
 
+
 import com.intellij.ide.DataManager;
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.AbstractVcs;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.vcs.log.VcsUser;
 import com.intellij.vcsUtil.VcsUtil;
-import git4idea.GitUserRegistry;
 import git4idea.GitVcs;
 import git4idea.branch.GitBranchUtil;
 import git4idea.repo.GitRemote;
