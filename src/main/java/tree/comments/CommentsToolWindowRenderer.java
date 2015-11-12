@@ -30,6 +30,7 @@ public class CommentsToolWindowRenderer extends JComponent {
 
 
     private Editor editor;
+    private CommentLayouter commentLayouter;
 
     public CommentsToolWindowRenderer(FileEditorManager editorManager) {
         setEditor(editorManager.getSelectedTextEditor());
@@ -59,6 +60,7 @@ public class CommentsToolWindowRenderer extends JComponent {
     private CaretListener caretListener = new CaretListener() {
         @Override
         public void caretPositionChanged(CaretEvent caretEvent) {
+            commentLayouter.layoutComments(editor);
             repaint();
         }
 
@@ -73,64 +75,12 @@ public class CommentsToolWindowRenderer extends JComponent {
         }
     };
 
-    @SuppressWarnings("unused")
-    private TextAnnotationGutterProvider gutterProvider = new TextAnnotationGutterProvider() {
-        @Nullable
-        @Override
-        public String getLineText(int i, Editor editor) {
-            for(Comment c : getCommentsForFile(editor)) {
-                if(Integer.parseInt(c.getLineFrom()) == i+1) {
-                    return "COMMENT HERE";
-                }
-            }
-            return null;
+    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> {
+        if(commentLayouter != null) {
+            commentLayouter.layoutComments(editor);
         }
-
-        @Nullable
-        @Override
-        public String getToolTip(int i, Editor editor) {
-            for(Comment c : getCommentsForFile(editor)) {
-                if(Integer.parseInt(c.getLineFrom()) == i+1) {
-                    return c.getContent();
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public EditorFontType getStyle(int i, Editor editor) {
-            return EditorFontType.BOLD;
-        }
-
-        @Nullable
-        @Override
-        public ColorKey getColor(int i, Editor editor) {
-            return ColorKey.createColorKey("whoknows", JBColor.BLACK);
-        }
-
-        @Nullable
-        @Override
-        public Color getBgColor(int i, Editor editor) {
-            for(Comment c : getCommentsForFile(editor)) {
-                if(Integer.parseInt(c.getLineFrom()) == i+1) {
-                    return JBColor.PINK;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public List<AnAction> getPopupActions(int i, Editor editor) {
-            return null;
-        }
-
-        @Override
-        public void gutterClosed() {
-
-        }
+        repaint();
     };
-
-    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> repaint();//scrollRectToVisible(visibleAreaEvent.getNewRectangle());
 
     private void setEditor(Editor ed) {
         if(editor != null) {
@@ -140,6 +90,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         this.editor = ed;
         editor.getCaretModel().addCaretListener(caretListener);
         editor.getScrollingModel().addVisibleAreaListener(visibleAreaListener);
+        commentLayouter = new CommentLayouter(getCommentsForFile(editor));
+        commentLayouter.layoutComments(editor);
 //        editor.getGutter().registerTextAnnotation(gutterProvider);
         setPreferredSize(new Dimension(100 /*default (basically min) width*/, 100/*editor.getContentComponent().getHeight()*/));
         this.invalidate();
@@ -152,28 +104,28 @@ public class CommentsToolWindowRenderer extends JComponent {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if(editor != null) {
-            for(RenderableComment c : layoutComments(getCommentsForFile(editor))) {
+            for(RenderableComment c : commentLayouter.getRenderableComments()) {
                 c.paint(g2, getWidth(), tempDrawingLabel);
             }
         }
         super.paintComponent(g);
     }
 
-    private List<RenderableComment> layoutComments(List<Comment> comments) {
-        List<RenderableComment> commentsLaidOut = new ArrayList<>();
-        if(editor != null) {
-            int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
-            for (Comment c : comments) {
-                int lineY = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
-                int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
-                int y = lineY-scrollY;
-                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
-                renderableComment.setCursorInLine(renderableComment.lineContainedInComment(caretLine));
-                commentsLaidOut.add(renderableComment);
-            }
-        }
-        return commentsLaidOut;
-    }
+//    private List<RenderableComment> layoutComments(List<Comment> comments) {
+//        List<RenderableComment> commentsLaidOut = new ArrayList<>();
+//        if(editor != null) {
+//            int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
+//            for (Comment c : comments) {
+//                int lineY = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
+//                int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
+//                int y = lineY-scrollY;
+//                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
+//                renderableComment.setCursorInLine(renderableComment.lineContainedInComment(caretLine));
+//                commentsLaidOut.add(renderableComment);
+//            }
+//        }
+//        return commentsLaidOut;
+//    }
 
 
     private List<Comment> getCommentsForFile(Editor editor) {
@@ -185,7 +137,20 @@ public class CommentsToolWindowRenderer extends JComponent {
         comment1.setLineFrom("20");
         comment1.setLineTo("20");
 
+        Comment comment2 = new Comment();
+        comment2.setContent("A second comment");
+        comment2.setLineFrom("21");
+        comment2.setLineTo("21");
+
+        Comment comment3 = new Comment();
+        comment3.setContent("A third comment");
+        comment3.setLineFrom("22");
+        comment3.setLineTo("22");
+
         commentList.add(comment1);
+        commentList.add(comment1);
+        commentList.add(comment2);
+        commentList.add(comment3);
 
 
         return commentList;

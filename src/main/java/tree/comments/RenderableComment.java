@@ -12,6 +12,9 @@ import java.awt.geom.RoundRectangle2D;
  */
 public class RenderableComment {
 
+    static final int commentHeight = 50;
+    static final int padding = 10;
+
     private Comment comment;
 
     private int y;
@@ -24,6 +27,13 @@ public class RenderableComment {
     private int lineFrom;
     private int lineTo;
 
+    public RenderableComment(Comment comment) {
+        this.comment = comment;
+
+        lineFrom = Integer.parseInt(comment.getLineFrom());
+        lineTo = Integer.parseInt(comment.getLineTo());
+    }
+
     public RenderableComment(Comment comment, int y, int lineY, boolean expanded, boolean cursorInLine) {
         this.comment = comment;
         this.y = y;
@@ -35,6 +45,42 @@ public class RenderableComment {
         lineTo = Integer.parseInt(comment.getLineTo());
     }
 
+    public int getLineFrom() {
+        return lineFrom;
+    }
+
+    public int getLineTo() {
+        return lineTo;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public int getLineY() {
+        return lineY;
+    }
+
+    public void setLineY(int lineY) {
+        this.lineY = lineY;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
+    }
+
+    public boolean isCursorInLine() {
+        return cursorInLine;
+    }
+
     public void setCursorInLine(boolean cursorInLine) {
         this.cursorInLine = cursorInLine;
     }
@@ -43,14 +89,17 @@ public class RenderableComment {
         return lineNumber >= lineFrom && lineNumber <= lineTo;
     }
 
+    /**
+     * This should be used for the Y bounds only - X bounds are dependent on container width
+     */
+    public Rectangle getBounds() {
+        return new Rectangle(2*padding, y-commentHeight/2, 3*padding, commentHeight);
+    }
+
     public void paint(Graphics2D g, int containerWidth, JLabel tempDrawingLabel) {
-        if(cursorInLine) {
-            g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, 2.0f));
-        }
+        float lineWidth = cursorInLine ? 2.0f : 1.0f;
 
-
-        int commentHeight = 50;
-        int padding = 10;
+        g.setStroke(new BasicStroke(lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, lineWidth));
 
         Shape commentBubble = new RoundRectangle2D.Double(2*padding, y-commentHeight/2, containerWidth-3*padding, commentHeight, 15, 15);
         Polygon commentArrow = new Polygon(new int[] {padding/2, 2*padding+1, 2*padding+1}, new int[] {lineY, y-padding/2, y+padding/2}, 3);
