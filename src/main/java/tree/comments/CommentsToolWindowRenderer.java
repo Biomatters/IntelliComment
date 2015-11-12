@@ -6,6 +6,8 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.TextAnnotationGutterProvider;
 import com.intellij.openapi.editor.colors.ColorKey;
 import com.intellij.openapi.editor.colors.EditorFontType;
+import com.intellij.openapi.editor.event.CaretEvent;
+import com.intellij.openapi.editor.event.CaretListener;
 import com.intellij.openapi.editor.event.VisibleAreaListener;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
@@ -53,6 +55,23 @@ public class CommentsToolWindowRenderer extends JComponent {
         tempDrawingLabel.setOpaque(false);
         tempDrawingLabel.setForeground(JBColor.BLACK);
     }
+
+    private CaretListener caretListener = new CaretListener() {
+        @Override
+        public void caretPositionChanged(CaretEvent caretEvent) {
+            repaint();
+        }
+
+        @Override
+        public void caretAdded(CaretEvent caretEvent) {
+
+        }
+
+        @Override
+        public void caretRemoved(CaretEvent caretEvent) {
+
+        }
+    };
 
     @SuppressWarnings("unused")
     private TextAnnotationGutterProvider gutterProvider = new TextAnnotationGutterProvider() {
@@ -116,8 +135,10 @@ public class CommentsToolWindowRenderer extends JComponent {
     private void setEditor(Editor ed) {
         if(editor != null) {
             editor.getScrollingModel().removeVisibleAreaListener(visibleAreaListener);
+            editor.getCaretModel().removeCaretListener(caretListener);
         }
         this.editor = ed;
+        editor.getCaretModel().addCaretListener(caretListener);
         editor.getScrollingModel().addVisibleAreaListener(visibleAreaListener);
 //        editor.getGutter().registerTextAnnotation(gutterProvider);
         setPreferredSize(new Dimension(100 /*default (basically min) width*/, editor.getContentComponent().getHeight()));
@@ -133,14 +154,25 @@ public class CommentsToolWindowRenderer extends JComponent {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if(editor != null) {
-            for(Comment c : getCommentsForFile(editor)) {
-                int y = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
-
-                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
-                renderableComment.paint(g2, getWidth(), tempDrawingLabel);
+            for(RenderableComment c : layoutComments(getCommentsForFile(editor))) {
+                c.paint(g2, getWidth(), tempDrawingLabel);
             }
         }
         super.paintComponent(g);
+    }
+
+    private List<RenderableComment> layoutComments(List<Comment> comments) {
+        List<RenderableComment> commentsLaidOut = new ArrayList<>();
+        if(editor != null) {
+            int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
+            for (Comment c : comments) {
+                int y = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
+                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
+                renderableComment.setCursorInLine(renderableComment.lineContainedInComment(caretLine));
+                commentsLaidOut.add(renderableComment);
+            }
+        }
+        return commentsLaidOut;
     }
 
 

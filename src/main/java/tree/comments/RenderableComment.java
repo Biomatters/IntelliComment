@@ -21,6 +21,8 @@ public class RenderableComment {
     private boolean expanded;
 
     private boolean cursorInLine;
+    private int lineFrom;
+    private int lineTo;
 
     public RenderableComment(Comment comment, int y, int lineY, boolean expanded, boolean cursorInLine) {
         this.comment = comment;
@@ -28,6 +30,17 @@ public class RenderableComment {
         this.lineY = lineY;
         this.expanded = expanded;
         this.cursorInLine = cursorInLine;
+
+        lineFrom = Integer.parseInt(comment.getLineFrom());
+        lineTo = Integer.parseInt(comment.getLineTo());
+    }
+
+    public void setCursorInLine(boolean cursorInLine) {
+        this.cursorInLine = cursorInLine;
+    }
+
+    public boolean lineContainedInComment(int lineNumber) {
+        return lineNumber >= lineFrom && lineNumber <= lineTo;
     }
 
     public void paint(Graphics2D g, int containerWidth, JLabel tempDrawingLabel) {
