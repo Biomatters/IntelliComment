@@ -20,18 +20,18 @@ public class CommentManager {
     // The path for the pull request, parameter 1 is the userName, parameter 2 is the pull request id.
     private final static String PULL_REQUEST_PATH = "/1.0/repositories/%s/%s/pullrequests/%s/comments";
     private final WebTarget rootTarget;
-    private final String userName;
+    private final String repoOwner;
     private final String repoSlug;
     private final String branch;
     private int pullRequestId;
 
     /**
-     * @param userName the current user's main.bitbucket username.
+     * @param repoOwner the current user's main.bitbucket username.
      */
-    public CommentManager(String repoSlug, String userName, String branch) {
+    public CommentManager(String repoSlug, String repoOwner, String branch) {
         // TODO Extract rootTarget out when we add DI.
         rootTarget = ClientBuilder.newClient().target(Config.BITBUCKET_URL);
-        this.userName = userName;
+        this.repoOwner = repoOwner;
         this.repoSlug = repoSlug;
         this.branch = branch;
 
@@ -46,7 +46,7 @@ public class CommentManager {
      * @return the complete url.
      */
     public String composePullRequestPath(int pullRequestId) {
-        return String.format(PULL_REQUEST_PATH, userName, repoSlug, pullRequestId);
+        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, pullRequestId);
     }
 
     /**
@@ -64,7 +64,7 @@ public class CommentManager {
         // TODO Refactor the "makeSafeRequest" and use here, to avoid the duplicate code.
         try {
             response = rootTarget
-                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", userName, repoSlug))
+                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
                     .request(MediaType.APPLICATION_JSON_TYPE)
                     .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
                     .get(V2Response.class);
@@ -72,7 +72,7 @@ public class CommentManager {
             // TODO Improve auth to be a bit more obvious rather than leaving in the constructor.
             Auth auth = new Auth();
             response = rootTarget
-                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", userName, repoSlug))
+                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
                     .request(MediaType.APPLICATION_JSON_TYPE)
                     .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
                     .get(V2Response.class);

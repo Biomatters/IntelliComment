@@ -167,6 +167,6 @@ public class CommentsToolWindowRenderer extends JComponent {
     private List<Comment> getCommentsForFile(Editor editor) {
 
         String fileName = ((EditorImpl) editor).getVirtualFile().toString();
-        return CommentsRepo.getComments(fileName);
+        return CommentsRepo.getComments();
     }
 }
