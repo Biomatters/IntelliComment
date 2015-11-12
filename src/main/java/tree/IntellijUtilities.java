@@ -64,7 +64,7 @@ public class IntellijUtilities {
         return new GitStatusInfo(user, repositorySlug, branch);
     }
 
-    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://[^@]*@bitbucket\\..*/([^/]*\\.git)");
+    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://[^@]*@bitbucket\\..*/([^/]*)\\.git");
 
     /**
      * Determines the bitbucket repo slug; that is, the project name. Ensures that the url of the remote is a bitbucket url.
