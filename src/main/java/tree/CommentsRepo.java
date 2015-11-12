@@ -3,7 +3,6 @@ package tree;
 import bitbucket.CommentManager;
 import bitbucket.models.Comment;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
@@ -26,9 +25,9 @@ public class CommentsRepo {
             GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
 
             if (gitStatusInfo != null) {
-                CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.userName,
+                CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner,
                         gitStatusInfo.branch);
-                comments = commentManager.get(1);
+                comments = commentManager.get(176);
             } else {
                 comments = Collections.emptyList();
             }
