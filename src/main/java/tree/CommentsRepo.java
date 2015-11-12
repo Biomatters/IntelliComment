@@ -27,7 +27,7 @@ public class CommentsRepo {
             if (gitStatusInfo != null) {
                 CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner,
                         gitStatusInfo.branch);
-                comments = commentManager.get(176);
+                comments = commentManager.get(174);
             } else {
                 comments = Collections.emptyList();
             }
