@@ -35,7 +35,8 @@ public class CommentManager {
         this.repoSlug = repoSlug;
         this.branch = branch;
 
-        this.pullRequestId = 1;//getCurrentPullRequest(); TODO The getCurrentPullRequest method isn't working yet.
+        // TODO The getCurrentPullRequest method isn't working yet.
+        this.pullRequestId = 1;//getCurrentPullRequest();
     }
 
     /**
@@ -77,6 +78,9 @@ public class CommentManager {
                     .get(V2Response.class);
         }
         // TODO Find PRs made from the current branch and return the most recent of them.
+
+//        response.getValues().stream().filter(repo ->repo.).collect(V2Response.class);
+
         return response.getValues().get(0).getId();
     }
 

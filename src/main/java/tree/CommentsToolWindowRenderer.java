@@ -7,6 +7,7 @@ import com.intellij.openapi.editor.TextAnnotationGutterProvider;
 import com.intellij.openapi.editor.colors.ColorKey;
 import com.intellij.openapi.editor.colors.EditorFontType;
 import com.intellij.openapi.editor.event.VisibleAreaListener;
+import com.intellij.openapi.editor.impl.EditorImpl;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
@@ -59,8 +60,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         @Nullable
         @Override
         public String getLineText(int i, Editor editor) {
-            for(Comment c : getCommentsForFile(editor)) {
-                if(Integer.parseInt(c.getLineFrom()) == i+1) {
+            for (Comment c : getCommentsForFile(editor)) {
+                if (Integer.parseInt(c.getLineFrom()) == i + 1) {
                     return "COMMENT HERE";
                 }
             }
@@ -70,8 +71,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         @Nullable
         @Override
         public String getToolTip(int i, Editor editor) {
-            for(Comment c : getCommentsForFile(editor)) {
-                if(Integer.parseInt(c.getLineFrom()) == i+1) {
+            for (Comment c : getCommentsForFile(editor)) {
+                if (Integer.parseInt(c.getLineFrom()) == i + 1) {
                     return c.getContent();
                 }
             }
@@ -92,8 +93,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         @Nullable
         @Override
         public Color getBgColor(int i, Editor editor) {
-            for(Comment c : getCommentsForFile(editor)) {
-                if(Integer.parseInt(c.getLineFrom()) == i+1) {
+            for (Comment c : getCommentsForFile(editor)) {
+                if (Integer.parseInt(c.getLineFrom()) == i + 1) {
                     return JBColor.PINK;
                 }
             }
@@ -114,7 +115,7 @@ public class CommentsToolWindowRenderer extends JComponent {
     private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> scrollRectToVisible(visibleAreaEvent.getNewRectangle());
 
     private void setEditor(Editor ed) {
-        if(editor != null) {
+        if (editor != null) {
             editor.getScrollingModel().removeVisibleAreaListener(visibleAreaListener);
         }
         this.editor = ed;
@@ -130,33 +131,33 @@ public class CommentsToolWindowRenderer extends JComponent {
 
     @Override
     protected void paintComponent(Graphics g) {
-        ((Graphics2D)g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        if(editor != null) {
-            for(Comment c : getCommentsForFile(editor)) {
-                int y = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
+        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        if (editor != null) {
+            for (Comment c : getCommentsForFile(editor)) {
+                int y = Integer.parseInt(c.getLineFrom()) * editor.getLineHeight() - editor.getLineHeight() / 2;
                 int commentHeight = 50;
                 int padding = 10;
 
                 //draw the bubble...
                 g.setColor(JBColor.WHITE);
-                g.fillRoundRect(padding, y-commentHeight/2, getWidth()-2*padding, commentHeight, 15, 15);
+                g.fillRoundRect(padding, y - commentHeight / 2, getWidth() - 2 * padding, commentHeight, 15, 15);
                 g.setColor(JBColor.GRAY);
-                g.drawRoundRect(padding, y-commentHeight/2, getWidth()-2*padding, commentHeight, 15, 15);
+                g.drawRoundRect(padding, y - commentHeight / 2, getWidth() - 2 * padding, commentHeight, 15, 15);
                 g.setColor(JBColor.WHITE);
-                Polygon p = new Polygon(new int[] {padding/2, padding, padding}, new int[] {y, y-padding/2, y+padding/2}, 3);
+                Polygon p = new Polygon(new int[]{padding / 2, padding, padding}, new int[]{y, y - padding / 2, y + padding / 2}, 3);
                 g.drawPolygon(p);
                 g.fillPolygon(p);
                 g.setColor(JBColor.GRAY);
-                g.drawLine(padding/2, y, padding, y-padding/2);
-                g.drawLine(padding/2, y, padding, y+padding/2);
+                g.drawLine(padding / 2, y, padding, y - padding / 2);
+                g.drawLine(padding / 2, y, padding, y + padding / 2);
 
 
                 //text for the bubble...
                 tempDrawingLabel.setText(c.getContent());
-                tempDrawingLabel.setSize(new Dimension(getWidth()-4*padding, commentHeight-2*padding));
-                g.translate(2*padding, y-commentHeight/2+padding);
+                tempDrawingLabel.setSize(new Dimension(getWidth() - 4 * padding, commentHeight - 2 * padding));
+                g.translate(2 * padding, y - commentHeight / 2 + padding);
                 tempDrawingLabel.paint(g);
-                g.translate(-2*padding, -y+commentHeight/2-padding);
+                g.translate(-2 * padding, -y + commentHeight / 2 - padding);
             }
         }
         super.paintComponent(g);
@@ -164,17 +165,8 @@ public class CommentsToolWindowRenderer extends JComponent {
 
 
     private List<Comment> getCommentsForFile(Editor editor) {
-        ArrayList<Comment> commentList = new ArrayList<>();
 
-
-        Comment comment1 = new Comment();
-        comment1.setContent(editor.getDocument().getText(new TextRange(1, 100)));
-        comment1.setLineFrom("20");
-        comment1.setLineTo("20");
-
-        commentList.add(comment1);
-
-
-        return commentList;
+        String fileName = ((EditorImpl) editor).getVirtualFile().toString();
+        return CommentsRepo.getComments(fileName);
     }
 }
