@@ -7,13 +7,13 @@ package tree;
  */
 public class GitStatusInfo {
 
-    public final String userName;
     public final String repoSlug;
+    public final String repoOwner;
     public final String branch;
 
-    public GitStatusInfo(String userName, String repoSlug, String branch) {
-        this.userName = userName;
+    public GitStatusInfo(String repoSlug, String repoOwner, String branch) {
         this.repoSlug = repoSlug;
+        this.repoOwner = repoOwner;
         this.branch = branch;
     }
 }

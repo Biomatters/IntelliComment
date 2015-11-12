@@ -26,12 +26,12 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
-      <treeStructureProvider
+        <treeStructureProvider
                 implementation="tree.IntelliBucketTreeStructureProvider"/>
-      <appStarter implementation="tree.BucketStarter" />
-    <fileIconProvider implementation="tree.prettyFileIconProvider"/>
+        <fileIconProvider implementation="tree.prettyFileIconProvider"/>
 
-      <toolWindow id="IntelliBucket" anchor="right" factoryClass="tree.IntelliBucketToolWindow" order="FIRST" canCloseContents="false" conditionClass="tree.IntelliBucketConditionClass"/>
+        <toolWindow id="IntelliBucket" anchor="right" factoryClass="tree.IntelliBucketToolWindow" order="FIRST"
+                    canCloseContents="false" conditionClass="tree.IntelliBucketConditionClass"/>
     </extensions>
 
     <application-components>
