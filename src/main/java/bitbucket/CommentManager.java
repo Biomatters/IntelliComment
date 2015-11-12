@@ -86,8 +86,8 @@ public class CommentManager {
      * @param id The pull request id.
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-1-0-296095210.html#pullrequestsResource1.0-GETalistofapullrequestcommentsRedDEPRECATED
      */
-    public void get(int id) {
-        List<Comment> comments = makeSafeRequest((Worker) () -> rootTarget
+    public List<Comment>  get(int id) {
+        return makeSafeRequest((Worker) () -> rootTarget
                 .path(composePullRequestPath(id))
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))

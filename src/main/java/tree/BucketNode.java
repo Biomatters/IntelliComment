@@ -26,4 +26,9 @@ public class BucketNode extends PsiFileNode {
     public String getTitle() {
         return modifiedTitle != null ? modifiedTitle : super.getTitle();
     }
+
+    @Override
+    public String getName() {
+        return "test";
+    }
 }

@@ -39,13 +39,14 @@ public class IntellijUtilities {
      */
     public static
     @Nullable
-    GitStatusInfo getGitStatusInfo(PsiFileNode fileNode) {
+    GitStatusInfo getGitStatusInfo() {
 
         String user = getCurrentUserName();
         String repositorySlug = null;
         String branch = null;
 
-        GitRepository gitRepository = IntellijUtilities.getGitRepositoryForFile(fileNode);
+        Project project = getCurrentProject();
+        GitRepository gitRepository = IntellijUtilities.getGitRepositoryForFile(project.getBaseDir());
         if (gitRepository != null) {
             // Determine the branch
             branch = IntellijUtilities.getCurrentGitBranchName(gitRepository);
@@ -106,13 +107,12 @@ public class IntellijUtilities {
     /**
      * Returns the git repository for file backing a particular file node Returns null if this isn't applicable.
      *
-     * @param fileNode the file
+     * @param virtualFile the file
      * @return the branch name, else null
      */
     public static
     @Nullable
-    GitRepository getGitRepositoryForFile(PsiFileNode fileNode) {
-        VirtualFile virtualFile = fileNode.getVirtualFile();
+    GitRepository getGitRepositoryForFile(VirtualFile virtualFile) {
         if (virtualFile != null) {
             Project currentProject = IntellijUtilities.getCurrentProject();
             if (currentProject != null) {
