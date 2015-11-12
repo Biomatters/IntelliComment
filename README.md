@@ -12,4 +12,8 @@ Evolab project to view and post BitBucket pull request comments in IntelliJ.
 (~15mins or so)
 1. Download Intellij Community: `https://www.jetbrains.com/idea/download/`. You can still use ultimate to develop, but ultimate is closed source and makes debugging difficult.
 1. Get Gradle dependencies, run `gradle compileJava`. This will fail, but after getting the dependencies (which is all we need). TODO Fix this so doesn't fail.
-1. Create a plugin run config. Go to `Run > Edit Configurations` then in the tree, click the `+` button and choose type `Plugin`. Click apply, ok. 
+1. Create a plugin run config. Go to `Run > Edit Configurations` then in the tree, click the `+` button and choose type `Plugin`. Click apply, ok.
+
+Hacky things that you have to do until gradle is nicely integrated. TODO Fix this. 
+1. Maybe run `gradle compileJava`. This will fail but it will get the dependencies. You can run this task from the gradle sidebar > other > compileJava.
+1. Navigate to project structure / modules, changed `Use module compile...` to `Inherit compiler...`.
