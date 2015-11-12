@@ -130,33 +130,14 @@ public class CommentsToolWindowRenderer extends JComponent {
 
     @Override
     protected void paintComponent(Graphics g) {
-        ((Graphics2D)g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if(editor != null) {
             for(Comment c : getCommentsForFile(editor)) {
                 int y = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
-                int commentHeight = 50;
-                int padding = 10;
 
-                //draw the bubble...
-                g.setColor(JBColor.WHITE);
-                g.fillRoundRect(padding, y-commentHeight/2, getWidth()-2*padding, commentHeight, 15, 15);
-                g.setColor(JBColor.GRAY);
-                g.drawRoundRect(padding, y-commentHeight/2, getWidth()-2*padding, commentHeight, 15, 15);
-                g.setColor(JBColor.WHITE);
-                Polygon p = new Polygon(new int[] {padding/2, padding, padding}, new int[] {y, y-padding/2, y+padding/2}, 3);
-                g.drawPolygon(p);
-                g.fillPolygon(p);
-                g.setColor(JBColor.GRAY);
-                g.drawLine(padding/2, y, padding, y-padding/2);
-                g.drawLine(padding/2, y, padding, y+padding/2);
-
-
-                //text for the bubble...
-                tempDrawingLabel.setText(c.getContent());
-                tempDrawingLabel.setSize(new Dimension(getWidth()-4*padding, commentHeight-2*padding));
-                g.translate(2*padding, y-commentHeight/2+padding);
-                tempDrawingLabel.paint(g);
-                g.translate(-2*padding, -y+commentHeight/2-padding);
+                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
+                renderableComment.paint(g2, getWidth(), tempDrawingLabel);
             }
         }
         super.paintComponent(g);
