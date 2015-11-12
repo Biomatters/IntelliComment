@@ -3,13 +3,10 @@ package tree;
 import com.intellij.ide.DataManager;
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.AbstractVcs;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.vcs.log.VcsUser;
 import com.intellij.vcsUtil.VcsUtil;
-import git4idea.GitUserRegistry;
 import git4idea.GitVcs;
 import git4idea.branch.GitBranchUtil;
 import git4idea.repo.GitRemote;
@@ -41,7 +38,7 @@ public class IntellijUtilities {
     @Nullable
     GitStatusInfo getGitStatusInfo() {
 
-        String user = null;
+        String repoOwner = null;
         String repositorySlug = null;
         String branch = null;
 
@@ -55,37 +52,44 @@ public class IntellijUtilities {
             repositorySlug = determineBitBucketSlug(gitRepository.getInfo().getRemotes());
 
             // Determine the username
-            user = determineBitBucketUserName(gitRepository.getInfo().getRemotes());
+            repoOwner = determineBitBucketRepoOwnerName(gitRepository.getInfo().getRemotes());
         }
 
         // intellij reckons branch can never be null. It clearly can be, though...
         //noinspection ConstantConditions
-        if (user == null || repositorySlug == null || branch == null) {
+        if (repoOwner == null || repositorySlug == null || branch == null) {
             return null;
         }
 
-        return new GitStatusInfo(user, repositorySlug, branch);
+        return new GitStatusInfo(repositorySlug, repoOwner, branch);
     }
 
-    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://([^@]*)@bitbucket\\..*/([^/]*)\\.git");
+    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://[^@]*@bitbucket\\.org/(.*)/([^/]*)\\.git");
 
     /**
      * @return the current user name, if discoverable, else null
      */
-    public static @Nullable String determineBitBucketUserName(Collection<GitRemote> remotes) {
+    public static
+    @Nullable
+    String determineBitBucketRepoOwnerName(Collection<GitRemote> remotes) {
         return getPortionOfBitbucketUrl(remotes, 1);
     }
 
     /**
      * Determines the bitbucket repo slug; that is, the project name. Ensures that the url of the remote is a bitbucket url.
+     *
      * @param remotes the remotes listed for a git repository.
      * @return the repo slug, if determinable, else null
      */
-    public static @Nullable String determineBitBucketSlug(Collection<GitRemote> remotes) {
+    public static
+    @Nullable
+    String determineBitBucketSlug(Collection<GitRemote> remotes) {
         return getPortionOfBitbucketUrl(remotes, 2);
     }
 
-    public static @Nullable String getPortionOfBitbucketUrl(Collection<GitRemote> remotes, int group) {
+    public static
+    @Nullable
+    String getPortionOfBitbucketUrl(Collection<GitRemote> remotes, int group) {
         Iterator<GitRemote> remotesIter = remotes.iterator();
         if (!remotesIter.hasNext()) {
             return null;
@@ -116,6 +120,17 @@ public class IntellijUtilities {
             Project currentProject = IntellijUtilities.getCurrentProject();
             if (currentProject != null) {
                 AbstractVcs vcs = VcsUtil.getVcsFor(currentProject, virtualFile);
+
+                // Attempt #2
+//                try {
+//                    Method method = GitBranchUtil.class.getMethod("getCurrentRepository", new Class[]{});
+//                    method.invoke(GitBranchUtil, new Object[]{});
+//                } catch (NoSuchMethodException e) {
+//                    e.printStackTrace();
+//                }
+//
+                // Attempt #1
+                 //Thread.currentThread().setContextClassLoader(currentProject.getClass().getClassLoader());
                 if (vcs instanceof GitVcs) {
                     return GitBranchUtil.getCurrentRepository(currentProject);
                 }
