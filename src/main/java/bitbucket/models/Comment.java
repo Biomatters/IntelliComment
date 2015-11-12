@@ -23,8 +23,8 @@ public class Comment {
     public int parentId;
     public Boolean convertMarkup;
     public String comparespec;
-    public String lineFrom;
-    public String lineTo;
+    public int lineFrom;
+    public int lineTo;
     public String destinationRevision;
     public String createdOn;
     // TODO Parse to date.
@@ -35,6 +35,25 @@ public class Comment {
 
     public Comment() {
         // Empty for json deserialization.
+    }
+
+    /**
+     * Whether this is a comment with a line number that is not a reply.
+     *
+     * @return
+     */
+    public boolean isRootComment() {
+        return getLineNumber() == 0;
+    }
+
+    /**
+     * Returns the given line number. Lines start at index 1 and so 0 represents a comment not attached to a line.
+     * Examples are comments directly in the root of a pull request or replies to comments.
+     *
+     * @return
+     */
+    public int getLineNumber() {
+        return lineFrom != 0 ? lineFrom : lineTo;
     }
 
     public Boolean getConvertMarkup() {
@@ -181,21 +200,21 @@ public class Comment {
         this.authorInfo = authorInfo;
     }
 
-    public String getLineFrom() {
+    public int getLineFrom() {
         return lineFrom;
     }
 
     @JsonProperty("line_from")
-    public void setLineFrom(String lineFrom) {
+    public void setLineFrom(int lineFrom) {
         this.lineFrom = lineFrom;
     }
 
-    public String getLineTo() {
+    public int getLineTo() {
         return lineTo;
     }
 
     @JsonProperty("line_to")
-    public void setLineTo(String lineTo) {
+    public void setLineTo(int lineTo) {
         this.lineTo = lineTo;
     }
 
