@@ -10,6 +10,12 @@ Evolab project to view and post BitBucket pull request comments in IntelliJ.
 
 ### Contribution guidelines ###
 
+### Post-installation Steps ###
+1. We depend on the jars in the git4idea plugin. Unfortunately, when you create your Intellij SDK, it adds some jars to the classpath but not certain plugins.
+    * Project Structure > SDKs > Your Intellij SDK > Classpath tab > [+] > Expand out your Intellij CE install directory
+    * Expand plugins > git4idea\lib
+    * Select all the jars in there and add them, click apply
+
 ### Who do I talk to? ###
 
 * Owen
