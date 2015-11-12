@@ -130,7 +130,7 @@ public class CommentsToolWindowRenderer extends JComponent {
         }
     };
 
-    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> scrollRectToVisible(visibleAreaEvent.getNewRectangle());
+    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> repaint();//scrollRectToVisible(visibleAreaEvent.getNewRectangle());
 
     private void setEditor(Editor ed) {
         if(editor != null) {
@@ -141,10 +141,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         editor.getCaretModel().addCaretListener(caretListener);
         editor.getScrollingModel().addVisibleAreaListener(visibleAreaListener);
 //        editor.getGutter().registerTextAnnotation(gutterProvider);
-        setPreferredSize(new Dimension(100 /*default (basically min) width*/, editor.getContentComponent().getHeight()));
+        setPreferredSize(new Dimension(100 /*default (basically min) width*/, 100/*editor.getContentComponent().getHeight()*/));
         this.invalidate();
-
-
     }
 
     private JLabel tempDrawingLabel = new JLabel();
@@ -166,7 +164,9 @@ public class CommentsToolWindowRenderer extends JComponent {
         if(editor != null) {
             int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
             for (Comment c : comments) {
-                int y = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
+                int lineY = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
+                int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
+                int y = lineY-scrollY;
                 RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
                 renderableComment.setCursorInLine(renderableComment.lineContainedInComment(caretLine));
                 commentsLaidOut.add(renderableComment);
