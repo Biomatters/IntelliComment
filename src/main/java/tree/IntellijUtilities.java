@@ -44,16 +44,18 @@ public class IntellijUtilities {
         String branch = null;
 
         Project project = getCurrentProject();
-        GitRepository gitRepository = IntellijUtilities.getGitRepositoryForFile(project.getBaseDir());
-        if (gitRepository != null) {
-            // Determine the branch
-            branch = IntellijUtilities.getCurrentGitBranchName(gitRepository);
+        if (project != null) {
+            GitRepository gitRepository = IntellijUtilities.getGitRepositoryForFile(project.getBaseDir());
+            if (gitRepository != null) {
+                // Determine the branch
+                branch = IntellijUtilities.getCurrentGitBranchName(gitRepository);
 
-            // Determine the repo slug
-            repositorySlug = determineBitBucketSlug(gitRepository.getInfo().getRemotes());
+                // Determine the repo slug
+                repositorySlug = determineBitBucketSlug(gitRepository.getInfo().getRemotes());
 
-            // Determine the username
-            repoOwner = determineBitBucketRepoOwnerName(gitRepository.getInfo().getRemotes());
+                // Determine the username
+                repoOwner = determineBitBucketRepoOwnerName(gitRepository.getInfo().getRemotes());
+            }
         }
 
         // intellij reckons branch can never be null. It clearly can be, though...

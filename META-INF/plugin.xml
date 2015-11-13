@@ -32,6 +32,8 @@
 
         <toolWindow id="IntelliBucket" anchor="right" factoryClass="tree.IntelliBucketToolWindow" order="FIRST"
                     canCloseContents="false" conditionClass="tree.IntelliBucketConditionClass"/>
+        <applicationService serviceInterface="bitbucket.CommentsService"
+                        serviceImplementation="bitbucket.CommentsService"/>
     </extensions>
 
     <application-components>
