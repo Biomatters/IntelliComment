@@ -1,5 +1,6 @@
 package tree;
 
+import bitbucket.CommentsService;
 import bitbucket.models.Comment;
 import com.intellij.ide.FileIconProvider;
 import com.intellij.openapi.project.Project;
@@ -23,10 +24,10 @@ public class prettyFileIconProvider implements FileIconProvider {
 
         //public static final Icon MavenLogo = load("/images/mavenLogo.png"); // 16x16
         String fileName = file.getPresentableName();
+        String filePath = file.getPath();
         Icon myIcon = IconLoader.getIcon("/icons/comment.png");
-
-//        List<Comment> comments = CommentService.getComments(fileName);
-//        if (comments.size() > 0) {
+//        List<Comment> comments = CommentsService.getComments(filePath);
+//        if (comments.size() == 0) {
 //            return myIcon;
 //        }
         if (myIcon.getIconHeight() != 0) {
