@@ -1,5 +1,6 @@
 package tree.comments;
 
+import bitbucket.CommentManager;
 import bitbucket.models.Comment;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.editor.Editor;
@@ -17,6 +18,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import tree.CommentsRepo;
 
 import javax.swing.*;
 import java.awt.*;
@@ -51,10 +53,6 @@ public class CommentsToolWindowRenderer extends JComponent {
                 setEditor(fileEditorManagerEvent.getManager().getSelectedTextEditor());
             }
         });
-
-
-        tempDrawingLabel.setOpaque(false);
-        tempDrawingLabel.setForeground(JBColor.BLACK);
     }
 
     private CaretListener caretListener = new CaretListener() {
@@ -97,15 +95,13 @@ public class CommentsToolWindowRenderer extends JComponent {
         this.invalidate();
     }
 
-    private JLabel tempDrawingLabel = new JLabel();
-
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if(editor != null) {
             for(RenderableComment c : commentLayouter.getRenderableComments()) {
-                c.paint(g2, getWidth(), tempDrawingLabel);
+                c.paint(g2, getWidth());
             }
         }
         super.paintComponent(g);
@@ -134,18 +130,18 @@ public class CommentsToolWindowRenderer extends JComponent {
 
         Comment comment1 = new Comment();
         comment1.setContent(editor.getDocument().getText(new TextRange(1, 100)));
-        comment1.setLineFrom("20");
-        comment1.setLineTo("20");
+        comment1.setLineFrom(20);
+//        comment1.setLineTo(20);
 
         Comment comment2 = new Comment();
         comment2.setContent("A second comment");
-        comment2.setLineFrom("21");
-        comment2.setLineTo("21");
+        comment2.setLineFrom(21);
+//        comment2.setLineTo(21);
 
         Comment comment3 = new Comment();
         comment3.setContent("A third comment");
-        comment3.setLineFrom("22");
-        comment3.setLineTo("22");
+        comment3.setLineFrom(22);
+//        comment3.setLineTo(22);
 
         commentList.add(comment1);
         commentList.add(comment1);
@@ -153,6 +149,16 @@ public class CommentsToolWindowRenderer extends JComponent {
         commentList.add(comment3);
 
 
-        return commentList;
+        List<Comment> comments = null;
+        int count = 0;
+        while(count < 5) {
+            try {
+                comments = CommentsRepo.getComments();
+                break;
+            }
+            catch(Throwable ignore) {}
+            count++;
+        }
+        return comments != null ? comments : commentList;
     }
 }

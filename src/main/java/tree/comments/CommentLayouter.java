@@ -18,7 +18,9 @@ public class CommentLayouter {
     public CommentLayouter(List<Comment> comments) {
         renderableComments = new ArrayList<>();
         for(Comment c : comments) {
-            renderableComments.add(new RenderableComment(c));
+            if(c.getLineTo() > 0 || c.getLineFrom() > 0) {
+                renderableComments.add(new RenderableComment(c));
+            }
         }
     }
 
@@ -28,7 +30,7 @@ public class CommentLayouter {
         int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
 
         for(RenderableComment c : renderableComments) {
-            int lineY = c.getLineFrom()*editor.getLineHeight() - editor.getLineHeight()/2;
+            int lineY = c.getComment().getLineNumber()*editor.getLineHeight() - editor.getLineHeight()/2;
             int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
             int desiredY = lineY-scrollY;
 
