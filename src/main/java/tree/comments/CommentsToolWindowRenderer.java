@@ -1,12 +1,7 @@
 package tree.comments;
 
-import bitbucket.CommentManager;
 import bitbucket.models.Comment;
-import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.TextAnnotationGutterProvider;
-import com.intellij.openapi.editor.colors.ColorKey;
-import com.intellij.openapi.editor.colors.EditorFontType;
 import com.intellij.openapi.editor.event.CaretEvent;
 import com.intellij.openapi.editor.event.CaretListener;
 import com.intellij.openapi.editor.event.VisibleAreaListener;
@@ -15,13 +10,12 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import tree.CommentsRepo;
 
 import javax.swing.*;
 import java.awt.*;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,11 +49,12 @@ public class CommentsToolWindowRenderer extends JComponent {
         });
     }
 
+    PropertyChangeListener iconChangeListener = evt -> refreshLayout();
+
     private CaretListener caretListener = new CaretListener() {
         @Override
         public void caretPositionChanged(CaretEvent caretEvent) {
-            commentLayouter.layoutComments(editor);
-            repaint();
+            refreshLayout();
         }
 
         @Override
@@ -73,12 +68,14 @@ public class CommentsToolWindowRenderer extends JComponent {
         }
     };
 
-    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> {
-        if(commentLayouter != null) {
+    private void refreshLayout() {
+        SwingUtilities.invokeLater(() -> {
             commentLayouter.layoutComments(editor);
-        }
-        repaint();
-    };
+            repaint();
+        });
+    }
+
+    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> refreshLayout();
 
     private void setEditor(Editor ed) {
         if(editor != null) {
@@ -88,12 +85,14 @@ public class CommentsToolWindowRenderer extends JComponent {
         this.editor = ed;
         editor.getCaretModel().addCaretListener(caretListener);
         editor.getScrollingModel().addVisibleAreaListener(visibleAreaListener);
-        commentLayouter = new CommentLayouter(getCommentsForFile(editor));
+        commentLayouter = new CommentLayouter(getCommentsForFile(editor), iconChangeListener);
         commentLayouter.layoutComments(editor);
 //        editor.getGutter().registerTextAnnotation(gutterProvider);
         setPreferredSize(new Dimension(100 /*default (basically min) width*/, 100/*editor.getContentComponent().getHeight()*/));
         this.invalidate();
     }
+
+    private int lastWidth = 0;
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -105,6 +104,12 @@ public class CommentsToolWindowRenderer extends JComponent {
             }
         }
         super.paintComponent(g);
+
+        //force refreshing the layout to ensure that labels don't overlap (their height depends on the width of this component)
+        if (getWidth() != lastWidth) {
+            lastWidth = getWidth();
+            refreshLayout();
+        }
     }
 
 //    private List<RenderableComment> layoutComments(List<Comment> comments) {

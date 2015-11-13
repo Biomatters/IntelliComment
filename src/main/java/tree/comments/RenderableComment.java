@@ -6,12 +6,8 @@ import com.intellij.ui.JBColor;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.beans.PropertyChangeListener;
 
-/**
- * Created by Steve on 13/11/2015.
- */
 public class RenderableComment {
 
     static final int commentHeight = 50;
@@ -35,14 +31,13 @@ public class RenderableComment {
         label.setOpaque(false);
         label.setForeground(JBColor.BLACK);
         if(comment.getAuthorInfo().getAvatar() != null) {
-            try {
-                ImageIcon icon = new ImageIcon(new URL(comment.getAuthorInfo().getAvatar()));
-                label.setIcon(icon);
-                label.setHorizontalAlignment(SwingConstants.LEFT);
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
+            IconLoader.setIcon(comment.getAuthorInfo().getAvatar(), label);
+            label.setHorizontalAlignment(SwingConstants.LEFT);
         }
+    }
+
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        label.addPropertyChangeListener(propertyName, listener);
     }
 
     public Comment getComment() {
@@ -119,14 +114,6 @@ public class RenderableComment {
         g.drawLine(commentArrow.xpoints[0], commentArrow.ypoints[0], commentArrow.xpoints[1]-1, commentArrow.ypoints[1]);
         g.drawLine(commentArrow.xpoints[0], commentArrow.ypoints[0], commentArrow.xpoints[2]-1, commentArrow.ypoints[2]);
 
-
-        //hack to scale user icons to reasonable size
-        if(label.getIcon() != null && label.getIcon() instanceof ImageIcon) {
-            ImageIcon imageIcon = ((ImageIcon)label.getIcon());
-            if(imageIcon.getImage().getWidth(null) > 32) {
-                label.setIcon(new ImageIcon(imageIcon.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH)));
-            }
-        }
 
         //text for the bubble...
         label.setSize(new Dimension(containerWidth-5*padding, commentHeight-2*padding));

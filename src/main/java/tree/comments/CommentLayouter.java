@@ -4,22 +4,26 @@ import bitbucket.models.Comment;
 import com.intellij.openapi.editor.Editor;
 
 import java.awt.*;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by Steve on 13/11/2015.
- */
 public class CommentLayouter {
 
     private List<RenderableComment> renderableComments;
 
-    public CommentLayouter(List<Comment> comments) {
+    /**
+     * @param iconChangeListener Fired when the icon for any comment is loaded;
+     */
+    public CommentLayouter(List<Comment> comments, PropertyChangeListener iconChangeListener) {
         renderableComments = new ArrayList<>();
+        Collections.sort(comments, (o1, o2) -> o1.getLineNumber() - o2.getLineNumber());
         for(Comment c : comments) {
             if(c.getLineTo() > 0 || c.getLineFrom() > 0) {
-                renderableComments.add(new RenderableComment(c));
+                RenderableComment e = new RenderableComment(c);
+                e.addPropertyChangeListener("icon", iconChangeListener);
+                renderableComments.add(e);
             }
         }
     }
