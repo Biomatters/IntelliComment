@@ -2,6 +2,13 @@ package bitbucket.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.swing.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * A bitbucket comment, properties are copied from the v1 documentation.
  *
@@ -32,18 +39,50 @@ public class Comment {
     public Boolean isRepoOwner;
     public Boolean isSpam;
     public String baseRevision;
+    private static AtomicReference<ImageIcon> icon;
+    public List<Comment> children;
 
     public Comment() {
         // Empty for json deserialization.
     }
 
     /**
+     * Used for making post requests.
+     *
+     * @param id                  The pull request id.
+     * @param content             The comment message content.
+     * @param destinationRevision ???
+     * @param lineTo              optional Start line.
+     * @param lineFrom            optional End line.
+     */
+    public Comment(int id, String content, String destinationRevision, int lineTo, int lineFrom) {
+        this.pullRequestId = id;
+        this.content = content;
+        this.destinationRevision = destinationRevision;
+        this.lineTo = lineTo;
+        this.lineFrom = lineFrom;
+    }
+
+
+    public List<Comment> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<Comment> children) {
+        if (this.children == null) {
+            children = new ArrayList<>();
+        }
+        this.children = children;
+    }
+
+
+    /**
      * Whether this is a comment with a line number that is not a reply.
      *
      * @return
      */
-    public boolean isRootComment() {
-        return getLineNumber() == 0;
+    public boolean isRoot() {
+        return getLineNumber() != 0;
     }
 
     /**
@@ -252,5 +291,25 @@ public class Comment {
     @JsonProperty("is_spam")
     public void setIsSpam(Boolean isSpam) {
         this.isSpam = isSpam;
+    }
+
+
+    public ImageIcon getIcon() {
+        if (icon == null) {
+            icon = new AtomicReference<>();
+            Thread iconGetter = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        icon.set(new ImageIcon(new URL(authorInfo.avatar)));
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            iconGetter.start();
+
+        }
+        return icon.get();
     }
 }
