@@ -1,28 +1,21 @@
 package tree.comments;
 
-import bitbucket.CommentManager;
+import bitbucket.CommentsService;
 import bitbucket.models.Comment;
-import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.TextAnnotationGutterProvider;
-import com.intellij.openapi.editor.colors.ColorKey;
-import com.intellij.openapi.editor.colors.EditorFontType;
 import com.intellij.openapi.editor.event.CaretEvent;
 import com.intellij.openapi.editor.event.CaretListener;
 import com.intellij.openapi.editor.event.VisibleAreaListener;
+import com.intellij.openapi.editor.impl.EditorImpl;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import tree.CommentsRepo;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -107,58 +100,9 @@ public class CommentsToolWindowRenderer extends JComponent {
         super.paintComponent(g);
     }
 
-//    private List<RenderableComment> layoutComments(List<Comment> comments) {
-//        List<RenderableComment> commentsLaidOut = new ArrayList<>();
-//        if(editor != null) {
-//            int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
-//            for (Comment c : comments) {
-//                int lineY = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
-//                int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
-//                int y = lineY-scrollY;
-//                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
-//                renderableComment.setCursorInLine(renderableComment.lineContainedInComment(caretLine));
-//                commentsLaidOut.add(renderableComment);
-//            }
-//        }
-//        return commentsLaidOut;
-//    }
-
-
     private List<Comment> getCommentsForFile(Editor editor) {
-        ArrayList<Comment> commentList = new ArrayList<>();
 
-
-        Comment comment1 = new Comment();
-        comment1.setContent(editor.getDocument().getText(new TextRange(1, 100)));
-        comment1.setLineFrom(20);
-//        comment1.setLineTo(20);
-
-        Comment comment2 = new Comment();
-        comment2.setContent("A second comment");
-        comment2.setLineFrom(21);
-//        comment2.setLineTo(21);
-
-        Comment comment3 = new Comment();
-        comment3.setContent("A third comment");
-        comment3.setLineFrom(22);
-//        comment3.setLineTo(22);
-
-        commentList.add(comment1);
-        commentList.add(comment1);
-        commentList.add(comment2);
-        commentList.add(comment3);
-
-
-        List<Comment> comments = null;
-        int count = 0;
-        while(count < 5) {
-            try {
-                comments = CommentsRepo.getComments();
-                break;
-            }
-            catch(Throwable ignore) {}
-            count++;
-        }
-        return comments != null ? comments : commentList;
+        String fileName = ((EditorImpl) editor).getVirtualFile().toString();
+        return ServiceManager.getService(CommentsService.class).getComments(fileName);
     }
 }
