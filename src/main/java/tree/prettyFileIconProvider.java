@@ -1,5 +1,6 @@
 package tree;
 
+import bitbucket.models.Comment;
 import com.intellij.ide.FileIconProvider;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -7,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import com.intellij.openapi.util.IconLoader;
 
 import javax.swing.*;
+import java.util.List;
 
 /**
  * TODO: Write some javadoc
@@ -19,19 +21,17 @@ public class prettyFileIconProvider implements FileIconProvider {
     @Override
     public Icon getIcon(VirtualFile file, int flags, Project project) {
 
-        //Icon getIcon(@NotNull VirtualFile file, @Iconable.IconFlags int flags, @Nullable Project project);
-        int help = 0;
-        String filePath = file.getPresentableName();
-        String fileName = file.getNameWithoutExtension();
+        //public static final Icon MavenLogo = load("/images/mavenLogo.png"); // 16x16
+        String fileName = file.getPresentableName();
         Icon myIcon = IconLoader.getIcon("/icons/comment.png");
 
-        if (myIcon.getIconHeight() != 0){
+//        List<Comment> comments = CommentService.getComments(fileName);
+//        if (comments.size() > 0) {
+//            return myIcon;
+//        }
+        if (myIcon.getIconHeight() != 0) {
             return myIcon;
         }
-
         return null;
-        //public static final Icon MavenLogo = load("/images/mavenLogo.png"); // 16x16
-
-        //ImageIcon icon = createImageIcon("images/middle.gif","a pretty but meaningless splat");
     }
 }
