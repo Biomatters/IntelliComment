@@ -41,13 +41,21 @@ public class CommentLayouter {
             //find a place for the comment
             c.setLineY(desiredY);
             c.setY(desiredY);
-            int diff = RenderableComment.commentHeight+RenderableComment.padding;
+
+
+            //make sure comments don't go off the top...
+            if (lineY - c.getBounds().height / 2 < RenderableComment.padding) {
+                c.setY(desiredY + RenderableComment.padding + c.getBounds().height / 2 - lineY);
+            }
+
+
+            int diff = RenderableComment.padding;
             while(hasOverlap(existingBounds, c.getBounds())) {
                 c.setY(desiredY-diff);
                 if(hasOverlap(existingBounds, c.getBounds())) {
                     c.setY(desiredY+diff);
                 }
-                diff += RenderableComment.commentHeight+RenderableComment.padding;
+                diff++;
             }
             existingBounds.add(c.getBounds());
 

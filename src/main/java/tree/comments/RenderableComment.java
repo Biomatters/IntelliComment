@@ -87,12 +87,14 @@ public class RenderableComment {
      * This should be used for the Y bounds only - X bounds are dependent on container width
      */
     public Rectangle getBounds() {
-        return new Rectangle(2*padding, y-label.getHeight()/2, 3*padding, label.getPreferredSize().height+padding);
+        return new Rectangle(2 * padding, y - label.getPreferredSize().height / 2 - padding, 3 * padding, label.getPreferredSize().height + 2 * padding);
     }
 
     public void paint(Graphics2D g, int containerWidth) {
         int height = label.getPreferredSize().height+padding;
         float lineWidth = cursorInLine ? 2.0f : 1.0f;
+        Color backgroundColor = cursorInLine ? new JBColor(0xe5f1ff, 0xe5f1ff) : JBColor.white;
+        Color borderColor = JBColor.gray;
 
         g.setStroke(new BasicStroke(lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, lineWidth));
 
@@ -101,16 +103,16 @@ public class RenderableComment {
 
 
         //draw the bubble...
-        g.setColor(JBColor.WHITE);
+        g.setColor(backgroundColor);
         g.fill(commentBubble);
-        g.setColor(JBColor.GRAY);
+        g.setColor(borderColor);
         g.draw(commentBubble);
 
         //draw the arrow
-        g.setColor(JBColor.WHITE);
+        g.setColor(backgroundColor);
         g.draw(commentArrow);
         g.fill(commentArrow);
-        g.setColor(JBColor.GRAY);
+        g.setColor(borderColor);
         g.drawLine(commentArrow.xpoints[0], commentArrow.ypoints[0], commentArrow.xpoints[1]-1, commentArrow.ypoints[1]);
         g.drawLine(commentArrow.xpoints[0], commentArrow.ypoints[0], commentArrow.xpoints[2]-1, commentArrow.ypoints[2]);
 
