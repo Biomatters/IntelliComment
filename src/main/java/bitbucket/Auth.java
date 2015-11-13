@@ -25,12 +25,22 @@ public class Auth {
 
     private static String ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token";
 
+    Thread listener;
+
     public Auth() {
         // Start server to wait for bitbucket response from the OAuth process.
         authenticateUser();
 
         // Prompt the user to enter their details.
         promptUserForCredentials();
+
+        // Only continue once `authenticateUser` (which runs in the `listener` thread) has completed.
+        try {
+            listener.join();
+        } catch (InterruptedException e) {
+            System.out.printf("Interrupted thread");
+            e.printStackTrace();
+        }
     }
 
     private static boolean running = false;
@@ -56,7 +66,7 @@ public class Auth {
      * @see http://rosettacode.org/wiki/Hello_world/Web_server
      */
     private void authenticateUser() {
-        Thread listener = new Thread() {
+        listener = new Thread() {
             public void run() {
                 // Open a listener on port 5000 and then continuously listen for authentication.
                 // TODO Only use this when needed, but for a demo is probably OK as is.
