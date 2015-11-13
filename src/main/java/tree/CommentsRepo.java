@@ -44,10 +44,14 @@ public class CommentsRepo {
     public static List<Comment> getComments(String fileName) {
         List<Comment> comments = getComments();
 
+
+        final String name = fileName.replace(IntellijUtilities.getCurrentProject().getBaseDir().toString(), "").substring(1);
+
         List<Comment> filtered = comments.stream().filter(new Predicate<Comment>() {
             @Override
             public boolean test(Comment comment) {
-                return comment.getFilename().equals(fileName);
+
+                return comment.getFilename() != null && comment.getFilename().contains(name);
             }
         }).collect(Collectors.toList());
 
