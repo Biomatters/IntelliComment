@@ -2,6 +2,7 @@ package tree.comments;
 
 import bitbucket.models.Comment;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.components.JBLabel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,11 +24,11 @@ public class RenderableComment {
 
     private boolean cursorInLine;
 
-    private JLabel label;
+    private JBLabel label;
 
     public RenderableComment(Comment comment) {
         this.comment = comment;
-        this.label = new JLabel("<html><b>"+comment.getAuthorInfo().getDisplayName()+"</b><br>"+comment.getContent()+"</html>");
+        this.label = new JBLabel("<html><b>" + comment.getAuthorInfo().getDisplayName() + ": " + comment.getLineNumber() + "</b><br>" + comment.getContent() + "</html>");
         label.setOpaque(false);
         label.setForeground(JBColor.BLACK);
         if(comment.getAuthorInfo().getAvatar() != null) {
@@ -93,7 +94,7 @@ public class RenderableComment {
     public void paint(Graphics2D g, int containerWidth) {
         int height = label.getPreferredSize().height+padding;
         float lineWidth = cursorInLine ? 2.0f : 1.0f;
-        Color backgroundColor = cursorInLine ? new JBColor(0xe5f1ff, 0xe5f1ff) : JBColor.white;
+        Color backgroundColor = cursorInLine ? new JBColor(0xe5f1ff, 0x344b67) : JBColor.white;
         Color borderColor = JBColor.gray;
 
         g.setStroke(new BasicStroke(lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, lineWidth));

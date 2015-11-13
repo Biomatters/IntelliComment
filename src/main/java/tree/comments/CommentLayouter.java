@@ -28,6 +28,52 @@ public class CommentLayouter {
         }
     }
 
+    public boolean commentExistsForLine(int line) {
+        for (RenderableComment comment : renderableComments) {
+            if (comment.getComment().getLineNumber() == line) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gradually moves comments associated with the given line towards their natural position.
+     *
+     * @param line         The line number
+     * @param lineHeight   height of each line in the editor
+     * @param scrollOffset the Y scroll offset of the editor
+     * @return true if at least one more iteration is needed
+     */
+    public boolean iterateTowardLine(int line, int lineHeight, int scrollOffset) {
+        int lineY = line * lineHeight - lineHeight / 2 - scrollOffset;
+
+        int maxDist = 0;
+
+        List<Rectangle> existingBounds = new ArrayList<>();
+
+        //move comments associated with the line
+        for (RenderableComment comment : renderableComments) {
+            if (comment.lineContainedInComment(line)) {
+                int dist = comment.getY() - lineY;
+                maxDist = Math.max(Math.abs(dist), maxDist);
+                comment.setY(comment.getY() - (int) (dist * 0.25));
+                existingBounds.add(comment.getBounds());
+            }
+        }
+
+        updateCommentProperties(line);
+
+        //fit the other comments around them
+        for (RenderableComment comment : renderableComments) {
+            if (comment.getComment().getLineNumber() != line) {
+                comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2 + scrollOffset);
+                moveForOverlaps(comment, existingBounds);
+            }
+        }
+        return maxDist > 4;
+    }
+
     public void layoutComments(Editor editor) {
         List<Rectangle> existingBounds = new ArrayList<>();
 
@@ -49,20 +95,34 @@ public class CommentLayouter {
             }
 
 
-            int diff = RenderableComment.padding;
-            while(hasOverlap(existingBounds, c.getBounds())) {
-                c.setY(desiredY-diff);
-                if(hasOverlap(existingBounds, c.getBounds())) {
-                    c.setY(desiredY+diff);
-                }
-                diff++;
-            }
-            existingBounds.add(c.getBounds());
+            moveForOverlaps(c, existingBounds);
 
 
+            updateCommentProperties(caretLine);
+        }
+    }
+
+    public void updateCommentProperties(int caretLine) {
+        for (RenderableComment c : renderableComments) {
             //set comment properties based on editor state
             c.setCursorInLine(c.lineContainedInComment(caretLine));
         }
+    }
+
+    /**
+     * Moves the given comment such that it doesn't overlap any existing comments
+     */
+    private void moveForOverlaps(RenderableComment c, List<Rectangle> existingBounds) {
+        int desiredY = c.getY();
+        int diff = RenderableComment.padding;
+        while (hasOverlap(existingBounds, c.getBounds())) {
+            c.setY(desiredY - diff);
+            if (hasOverlap(existingBounds, c.getBounds())) {
+                c.setY(desiredY + diff);
+            }
+            diff++;
+        }
+        existingBounds.add(c.getBounds());
     }
 
     private boolean hasOverlap(List<Rectangle> existingBounds, Rectangle candidateBounds) {

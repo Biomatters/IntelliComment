@@ -54,7 +54,11 @@ public class CommentsToolWindowRenderer extends JComponent {
     private CaretListener caretListener = new CaretListener() {
         @Override
         public void caretPositionChanged(CaretEvent caretEvent) {
-            refreshLayout();
+            if (commentLayouter.commentExistsForLine(caretEvent.getNewPosition().line + 1)) {
+                centerForLine(caretEvent.getNewPosition().line + 1);
+            }
+            commentLayouter.updateCommentProperties(caretEvent.getNewPosition().line + 1);
+            repaint();
         }
 
         @Override
@@ -70,9 +74,35 @@ public class CommentsToolWindowRenderer extends JComponent {
 
     private void refreshLayout() {
         SwingUtilities.invokeLater(() -> {
-            commentLayouter.layoutComments(editor);
-            repaint();
+            if (commentLayouter != null) {
+                commentLayouter.layoutComments(editor);
+                repaint();
+            }
         });
+    }
+
+    private Thread centeringThread;
+
+    private void centerForLine(int line) {
+        if (centeringThread != null && centeringThread.isAlive()) {
+            centeringThread.interrupt();
+        }
+
+        final int lineHeight = editor.getLineHeight();
+        final int scrollOffset = editor.getScrollingModel().getVerticalScrollOffset();
+
+        Runnable r = () -> {
+            while (commentLayouter.iterateTowardLine(line, lineHeight, scrollOffset)) {
+                repaint();
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ex) {
+                    return;
+                }
+            }
+        };
+        centeringThread = new Thread(r, "Moving comment to line");
+        centeringThread.start();
     }
 
     private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> refreshLayout();
