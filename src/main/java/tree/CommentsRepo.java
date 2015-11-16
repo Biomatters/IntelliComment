@@ -39,7 +39,6 @@ public class CommentsRepo {
      * Gets all comments for the given file name.
      *
      * @param fileName The fully defined file name (ie include path: "/src/main/java/bitbucket/myClass.java" etc)
-     * @return
      */
     public static List<Comment> getComments(String fileName) {
         List<Comment> comments = getComments();
@@ -47,7 +46,7 @@ public class CommentsRepo {
         List<Comment> filtered = comments.stream().filter(new Predicate<Comment>() {
             @Override
             public boolean test(Comment comment) {
-                return comment.getFilename().equals(fileName);
+                return fileName.equals(comment.getFilename());
             }
         }).collect(Collectors.toList());
 

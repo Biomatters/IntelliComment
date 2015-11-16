@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.event.CaretEvent;
 import com.intellij.openapi.editor.event.CaretListener;
 import com.intellij.openapi.editor.event.VisibleAreaListener;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
@@ -12,6 +13,7 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import tree.CommentsRepo;
+import tree.IntellijUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -188,10 +190,14 @@ public class CommentsToolWindowRenderer extends JComponent {
         int count = 0;
         while(count < 5) {
             try {
-                comments = CommentsRepo.getComments();
+                //editor.getDocument().
+                VirtualFile baseDir = IntellijUtilities.getCurrentProject().getBaseDir();
+                VirtualFile editorFile = FileDocumentManager.getInstance().getFile(editor.getDocument());
+                comments = CommentsRepo.getComments(IntellijUtilities.getRelativePath(baseDir, editorFile));
                 break;
+            } catch (Throwable ignore) {
+                ignore.printStackTrace();
             }
-            catch(Throwable ignore) {}
             count++;
         }
         return comments != null ? comments : commentList;

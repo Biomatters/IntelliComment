@@ -51,24 +51,33 @@ public class CommentLayouter {
 
         List<Rectangle> existingBounds = new ArrayList<>();
 
+        int selectedCommentIndex = -1;
+
         //move comments associated with the line
-        for (RenderableComment comment : renderableComments) {
+        for (int i = 0; i < renderableComments.size(); i++) {
+            RenderableComment comment = renderableComments.get(i);
             if (comment.lineContainedInComment(line)) {
-                int dist = comment.getY() - lineY;
+                int dist = comment.getY() - correctEditorY(comment, lineY);
                 maxDist = Math.max(Math.abs(dist), maxDist);
                 comment.setY(comment.getY() - (int) (dist * 0.25));
                 existingBounds.add(comment.getBounds());
+                selectedCommentIndex = i;
+                break;
             }
         }
 
         updateCommentProperties(line);
 
         //fit the other comments around them
-        for (RenderableComment comment : renderableComments) {
-            if (comment.getComment().getLineNumber() != line) {
-                comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2);
-                moveForOverlaps(comment, existingBounds);
-            }
+        for (int i = selectedCommentIndex - 1; i >= 0; i--) {
+            RenderableComment comment = renderableComments.get(i);
+            comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2);
+            moveForOverlaps(comment, existingBounds);
+        }
+        for (int i = selectedCommentIndex + 1; i < renderableComments.size(); i++) {
+            RenderableComment comment = renderableComments.get(i);
+            comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2);
+            moveForOverlaps(comment, existingBounds);
         }
         return maxDist > 4;
     }
@@ -80,16 +89,15 @@ public class CommentLayouter {
 
         for(RenderableComment c : renderableComments) {
             int lineY = c.getComment().getLineNumber()*editor.getLineHeight() - editor.getLineHeight()/2;
+            lineY = correctEditorY(c, lineY);
+
 
             //find a place for the comment
             c.setLineY(lineY);
             c.setY(lineY);
 
 
-            //make sure comments don't go off the top...
-            if (lineY - c.getBounds().height / 2 < RenderableComment.padding) {
-                c.setY(lineY + RenderableComment.padding + c.getBounds().height / 2 - lineY);
-            }
+
 
 
             moveForOverlaps(c, existingBounds);
@@ -97,6 +105,14 @@ public class CommentLayouter {
 
             updateCommentProperties(caretLine);
         }
+    }
+
+    private int correctEditorY(RenderableComment c, int lineY) {
+        //make sure comments don't go off the top...
+        if (lineY - c.getBounds().height / 2 < RenderableComment.padding) {
+            lineY = lineY + RenderableComment.padding + c.getBounds().height / 2 - lineY;
+        }
+        return lineY;
     }
 
     public void updateCommentProperties(int caretLine) {

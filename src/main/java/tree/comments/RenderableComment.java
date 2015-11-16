@@ -28,10 +28,14 @@ public class RenderableComment {
 
     public RenderableComment(Comment comment) {
         this.comment = comment;
-        this.label = new JBLabel("<html><b>" + comment.getAuthorInfo().getDisplayName() + ": " + comment.getLineNumber() + "</b><br>" + comment.getContent() + "</html>");
+        try {
+            this.label = new JBLabel("<html><b>" + comment.getAuthorInfo().getDisplayName() + ": " + comment.getLineNumber() + "</b><br>" + comment.getContentRendered() + "</html>");
+        } catch (NullPointerException ex) {
+            this.label = new JBLabel("<html>" + comment.getContentRendered() + "</html>");
+        }
         label.setOpaque(false);
         label.setForeground(JBColor.BLACK);
-        if(comment.getAuthorInfo().getAvatar() != null) {
+        if (comment.getAuthorInfo() != null && comment.getAuthorInfo().getAvatar() != null) {
             IconLoader.setIcon(comment.getAuthorInfo().getAvatar(), label);
             label.setHorizontalAlignment(SwingConstants.LEFT);
         }
