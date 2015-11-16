@@ -89,13 +89,12 @@ public class CommentsToolWindowRenderer extends JComponent {
         }
 
         final int lineHeight = editor.getLineHeight();
-        final int scrollOffset = editor.getScrollingModel().getVerticalScrollOffset();
 
         Runnable r = () -> {
-            while (commentLayouter.iterateTowardLine(line, lineHeight, scrollOffset)) {
+            while (commentLayouter.iterateTowardLine(line, lineHeight)) {
                 repaint();
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(30);
                 } catch (InterruptedException ex) {
                     return;
                 }
@@ -105,7 +104,7 @@ public class CommentsToolWindowRenderer extends JComponent {
         centeringThread.start();
     }
 
-    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> refreshLayout();
+    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> repaint();
 
     private void setEditor(Editor ed) {
         if(editor != null) {
@@ -128,6 +127,7 @@ public class CommentsToolWindowRenderer extends JComponent {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.translate(0, -editor.getScrollingModel().getVerticalScrollOffset());
         if(editor != null) {
             for(RenderableComment c : commentLayouter.getRenderableComments()) {
                 c.paint(g2, getWidth());

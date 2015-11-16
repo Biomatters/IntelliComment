@@ -42,11 +42,10 @@ public class CommentLayouter {
      *
      * @param line         The line number
      * @param lineHeight   height of each line in the editor
-     * @param scrollOffset the Y scroll offset of the editor
      * @return true if at least one more iteration is needed
      */
-    public boolean iterateTowardLine(int line, int lineHeight, int scrollOffset) {
-        int lineY = line * lineHeight - lineHeight / 2 - scrollOffset;
+    public boolean iterateTowardLine(int line, int lineHeight/*, int scrollOffset*/) {
+        int lineY = line * lineHeight - lineHeight / 2;
 
         int maxDist = 0;
 
@@ -67,7 +66,7 @@ public class CommentLayouter {
         //fit the other comments around them
         for (RenderableComment comment : renderableComments) {
             if (comment.getComment().getLineNumber() != line) {
-                comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2 + scrollOffset);
+                comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2);
                 moveForOverlaps(comment, existingBounds);
             }
         }
@@ -81,17 +80,15 @@ public class CommentLayouter {
 
         for(RenderableComment c : renderableComments) {
             int lineY = c.getComment().getLineNumber()*editor.getLineHeight() - editor.getLineHeight()/2;
-            int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
-            int desiredY = lineY-scrollY;
 
             //find a place for the comment
-            c.setLineY(desiredY);
-            c.setY(desiredY);
+            c.setLineY(lineY);
+            c.setY(lineY);
 
 
             //make sure comments don't go off the top...
             if (lineY - c.getBounds().height / 2 < RenderableComment.padding) {
-                c.setY(desiredY + RenderableComment.padding + c.getBounds().height / 2 - lineY);
+                c.setY(lineY + RenderableComment.padding + c.getBounds().height / 2 - lineY);
             }
 
 
