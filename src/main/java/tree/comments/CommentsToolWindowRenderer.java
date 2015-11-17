@@ -9,7 +9,6 @@ import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import tree.CommentsRepo;
@@ -142,62 +141,9 @@ public class CommentsToolWindowRenderer extends JComponent {
         }
     }
 
-//    private List<RenderableComment> layoutComments(List<Comment> comments) {
-//        List<RenderableComment> commentsLaidOut = new ArrayList<>();
-//        if(editor != null) {
-//            int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
-//            for (Comment c : comments) {
-//                int lineY = Integer.parseInt(c.getLineFrom())*editor.getLineHeight() - editor.getLineHeight()/2;
-//                int scrollY = editor.getScrollingModel().getVerticalScrollOffset();
-//                int y = lineY-scrollY;
-//                RenderableComment renderableComment = new RenderableComment(c, y, y, false, false);
-//                renderableComment.setCursorInLine(renderableComment.lineContainedInComment(caretLine));
-//                commentsLaidOut.add(renderableComment);
-//            }
-//        }
-//        return commentsLaidOut;
-//    }
-
-
     private List<Comment> getCommentsForFile(Editor editor) {
-        ArrayList<Comment> commentList = new ArrayList<>();
 
-
-        Comment comment1 = new Comment();
-        comment1.setContent(editor.getDocument().getText(new TextRange(1, 100)));
-        comment1.setLineFrom(20);
-//        comment1.setLineTo(20);
-
-        Comment comment2 = new Comment();
-        comment2.setContent("A second comment");
-        comment2.setLineFrom(21);
-//        comment2.setLineTo(21);
-
-        Comment comment3 = new Comment();
-        comment3.setContent("A third comment");
-        comment3.setLineFrom(22);
-//        comment3.setLineTo(22);
-
-        commentList.add(comment1);
-        commentList.add(comment1);
-        commentList.add(comment2);
-        commentList.add(comment3);
-
-
-        List<Comment> comments = null;
-        int count = 0;
-        while(count < 5) {
-            try {
-                //editor.getDocument().
-                VirtualFile baseDir = IntellijUtilities.getCurrentProject().getBaseDir();
-                VirtualFile editorFile = FileDocumentManager.getInstance().getFile(editor.getDocument());
-                comments = CommentsRepo.getComments(IntellijUtilities.getRelativePath(baseDir, editorFile));
-                break;
-            } catch (Throwable ignore) {
-                ignore.printStackTrace();
-            }
-            count++;
-        }
-        return comments != null ? comments : commentList;
+        String fileName = ((EditorImpl) editor).getVirtualFile().toString();
+        return ServiceManager.getService(CommentsService.class).getComments(fileName);
     }
 }

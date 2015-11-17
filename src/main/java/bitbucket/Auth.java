@@ -25,12 +25,22 @@ public class Auth {
 
     private static String ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token";
 
+    Thread listener;
+
     public Auth() {
         // Start server to wait for bitbucket response from the OAuth process.
         authenticateUser();
 
         // Prompt the user to enter their details.
         promptUserForCredentials();
+
+        // Only continue once `authenticateUser` (which runs in the `listener` thread) has completed.
+        try {
+            listener.join();
+        } catch (InterruptedException e) {
+            System.out.printf("Interrupted thread");
+            e.printStackTrace();
+        }
     }
 
     private static boolean running = false;
@@ -56,7 +66,7 @@ public class Auth {
      * @see http://rosettacode.org/wiki/Hello_world/Web_server
      */
     private void authenticateUser() {
-        Thread listener = new Thread() {
+        listener = new Thread() {
             public void run() {
                 // Open a listener on port 5000 and then continuously listen for authentication.
                 // TODO Only use this when needed, but for a demo is probably OK as is.
@@ -111,24 +121,38 @@ public class Auth {
 
     private void getAndSaveAccessToken(String code) {
 
-        Form form = new Form();
-        form.param("grant_type", "authorization_code");
-        form.param("code", code);
+        Config.AccessAndRefreshToken accessAndRefreshToken = Config.loadUserTokensFromPreferences();
 
-        WebTarget url = ClientBuilder.newClient().target(ACCESS_TOKEN_URL);
-        Invocation.Builder builder = url
-                .request(MediaType.APPLICATION_JSON_TYPE);
+        String accessToken;
+        String refreshToken;
+        if (accessAndRefreshToken == null) {
+            // go get them!
+            Form form = new Form();
+            form.param("grant_type", "authorization_code");
+            form.param("code", code);
 
-        // Create a header of the form "Authorization: Basic {client_id:client_secret}".
-        byte[] secrets = (Config.APP_KEY + ":" + Config.APP_SECRET).getBytes();
-        String base64 = Base64.encodeBase64String(secrets);
+            WebTarget url = ClientBuilder.newClient().target(ACCESS_TOKEN_URL);
+            Invocation.Builder builder = url
+                    .request(MediaType.APPLICATION_JSON_TYPE);
 
-        AccessTokenResponse response = builder
-                .header("Authorization", "Basic " + base64)
-                .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), AccessTokenResponse.class);
+            // Create a header of the form "Authorization: Basic {client_id:client_secret}".
+            byte[] secrets = (Config.APP_KEY + ":" + Config.APP_SECRET).getBytes();
+            String base64 = Base64.encodeBase64String(secrets);
+
+            AccessTokenResponse response = builder
+                    .header("Authorization", "Basic " + base64)
+                    .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), AccessTokenResponse.class);
+            accessToken = response.getAccessToken();
+            refreshToken = response.getRefreshToken();
+
+            Config.saveUserTokensToPreferences(accessToken, refreshToken);
+        } else {
+            accessToken = accessAndRefreshToken.accessToken;
+            refreshToken = accessAndRefreshToken.refreshToken;
+        }
 
         // Save the user access and refresh token for use later.
-        Config.User.setAccessToken(response.getAccessToken());
-        Config.User.setRefreshToken(response.getRefreshToken());
+        Config.User.setAccessToken(accessToken);
+        Config.User.setRefreshToken(refreshToken);
     }
 }
