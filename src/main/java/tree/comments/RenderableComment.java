@@ -57,6 +57,7 @@ public class RenderableComment {
         this.y = y;
     }
 
+    @SuppressWarnings("unused")
     public int getLineY() {
         return lineY;
     }
@@ -65,14 +66,17 @@ public class RenderableComment {
         this.lineY = lineY;
     }
 
+    @SuppressWarnings("unused")
     public boolean isExpanded() {
         return expanded;
     }
 
+    @SuppressWarnings("unused")
     public void setExpanded(boolean expanded) {
         this.expanded = expanded;
     }
 
+    @SuppressWarnings("unused")
     public boolean isCursorInLine() {
         return cursorInLine;
     }
@@ -124,8 +128,13 @@ public class RenderableComment {
 
         //text for the bubble...
         label.setSize(new Dimension(containerWidth-5*padding, commentHeight-2*padding));
-        g.translate(3*padding, y-commentHeight/2+padding);
+        label.setSize(new Dimension(containerWidth - 5 * padding, label.getPreferredSize().height));
+        g.translate(3 * padding, y - label.getPreferredSize().height / 2);
+        Shape oldClip = g.getClip();
+        g.clipRect(0, 0, containerWidth - 5 * padding, label.getPreferredSize().height);
         label.paint(g);
-        g.translate(-3*padding, -y+commentHeight/2-padding);
+        g.setClip(oldClip);
+        g.translate(-3 * padding, -y + label.getPreferredSize().height / 2);
+
     }
 }

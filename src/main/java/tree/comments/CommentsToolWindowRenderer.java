@@ -90,10 +90,8 @@ public class CommentsToolWindowRenderer extends JComponent {
             centeringThread.interrupt();
         }
 
-        final int lineHeight = editor.getLineHeight();
-
         Runnable r = () -> {
-            while (commentLayouter.iterateTowardLine(line, lineHeight)) {
+            while (commentLayouter.iterateTowardLine(line, editor)) {
                 repaint();
                 try {
                     Thread.sleep(30);

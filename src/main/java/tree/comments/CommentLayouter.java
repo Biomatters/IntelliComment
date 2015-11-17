@@ -2,12 +2,16 @@ package tree.comments;
 
 import bitbucket.models.Comment;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.LogicalPosition;
 
+import javax.swing.*;
 import java.awt.*;
 import java.beans.PropertyChangeListener;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommentLayouter {
 
@@ -19,6 +23,7 @@ public class CommentLayouter {
     public CommentLayouter(List<Comment> comments, PropertyChangeListener iconChangeListener) {
         renderableComments = new ArrayList<>();
         Collections.sort(comments, (o1, o2) -> o1.getLineNumber() - o2.getLineNumber());
+        //noinspection Convert2streamapi
         for(Comment c : comments) {
             if(c.getLineTo() > 0 || c.getLineFrom() > 0) {
                 RenderableComment e = new RenderableComment(c);
@@ -41,43 +46,48 @@ public class CommentLayouter {
      * Gradually moves comments associated with the given line towards their natural position.
      *
      * @param line         The line number
-     * @param lineHeight   height of each line in the editor
+     * @param editor   used to determine the Y position of a given line
      * @return true if at least one more iteration is needed
      */
-    public boolean iterateTowardLine(int line, int lineHeight/*, int scrollOffset*/) {
-        int lineY = line * lineHeight - lineHeight / 2;
+    public boolean iterateTowardLine(int line, Editor editor) {
+        final AtomicInteger lineY = new AtomicInteger();
 
         int maxDist = 0;
+        try {
+            SwingUtilities.invokeAndWait(() -> lineY.set(getYForLineNumber(editor, line)));
 
-        List<Rectangle> existingBounds = new ArrayList<>();
+            List<Rectangle> existingBounds = new ArrayList<>();
 
-        int selectedCommentIndex = -1;
+            int selectedCommentIndex = -1;
 
-        //move comments associated with the line
-        for (int i = 0; i < renderableComments.size(); i++) {
-            RenderableComment comment = renderableComments.get(i);
-            if (comment.lineContainedInComment(line)) {
-                int dist = comment.getY() - correctEditorY(comment, lineY);
-                maxDist = Math.max(Math.abs(dist), maxDist);
-                comment.setY(comment.getY() - (int) (dist * 0.25));
-                existingBounds.add(comment.getBounds());
-                selectedCommentIndex = i;
-                break;
+            //move comments associated with the line
+            for (int i = 0; i < renderableComments.size(); i++) {
+                RenderableComment comment = renderableComments.get(i);
+                if (comment.lineContainedInComment(line)) {
+                    int dist = comment.getY() - correctEditorY(comment, lineY.get());
+                    maxDist = Math.max(Math.abs(dist), maxDist);
+                    comment.setY(comment.getY() - (int) (dist * 0.25));
+                    existingBounds.add(comment.getBounds());
+                    selectedCommentIndex = i;
+                    break;
+                }
             }
-        }
 
-        updateCommentProperties(line);
+            updateCommentProperties(line);
 
-        //fit the other comments around them
-        for (int i = selectedCommentIndex - 1; i >= 0; i--) {
-            RenderableComment comment = renderableComments.get(i);
-            comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2);
-            moveForOverlaps(comment, existingBounds);
-        }
-        for (int i = selectedCommentIndex + 1; i < renderableComments.size(); i++) {
-            RenderableComment comment = renderableComments.get(i);
-            comment.setY(comment.getComment().getLineNumber() * lineHeight - lineHeight / 2);
-            moveForOverlaps(comment, existingBounds);
+            //fit the other comments around them
+            for (int i = selectedCommentIndex - 1; i >= 0; i--) {
+                RenderableComment comment = renderableComments.get(i);
+                comment.setY(getYForComment(editor, comment));
+                moveForOverlaps(comment, existingBounds);
+            }
+            for (int i = selectedCommentIndex + 1; i < renderableComments.size(); i++) {
+                RenderableComment comment = renderableComments.get(i);
+                comment.setY(getYForComment(editor, comment));
+                moveForOverlaps(comment, existingBounds);
+            }
+        } catch (InterruptedException | InvocationTargetException e) {
+            throw new RuntimeException(e);
         }
         return maxDist > 4;
     }
@@ -88,13 +98,15 @@ public class CommentLayouter {
         int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
 
         for(RenderableComment c : renderableComments) {
-            int lineY = c.getComment().getLineNumber()*editor.getLineHeight() - editor.getLineHeight()/2;
-            lineY = correctEditorY(c, lineY);
+            int lineY = getYForLineNumber(editor, c.getComment().getLineNumber());
+            if (editor.hasHeaderComponent() && editor.getHeaderComponent() != null) {
+                lineY += editor.getHeaderComponent().getY() + editor.getHeaderComponent().getHeight();
+            }
 
 
             //find a place for the comment
             c.setLineY(lineY);
-            c.setY(lineY);
+            c.setY(correctEditorY(c, lineY));
 
 
 
@@ -105,6 +117,16 @@ public class CommentLayouter {
 
             updateCommentProperties(caretLine);
         }
+    }
+
+    private int getYForComment(Editor editor, RenderableComment comment) throws InvocationTargetException, InterruptedException {
+        final AtomicInteger lineY = new AtomicInteger();
+        SwingUtilities.invokeAndWait(() -> lineY.set(getYForLineNumber(editor, comment.getComment().getLineNumber())));
+        return lineY.get();
+    }
+
+    private int getYForLineNumber(Editor editor, int lineNumber) {
+        return editor.logicalPositionToXY(new LogicalPosition(lineNumber, 0)).y - editor.getLineHeight() / 2;
     }
 
     private int correctEditorY(RenderableComment c, int lineY) {
