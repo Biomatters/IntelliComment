@@ -1,6 +1,8 @@
 package tree.comments;
 
+import bitbucket.CommentsService;
 import bitbucket.models.Comment;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.event.CaretEvent;
 import com.intellij.openapi.editor.event.CaretListener;
@@ -11,13 +13,11 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
-import tree.CommentsRepo;
-import tree.IntellijUtilities;
 
 import javax.swing.*;
 import java.awt.*;
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -142,8 +142,11 @@ public class CommentsToolWindowRenderer extends JComponent {
     }
 
     private List<Comment> getCommentsForFile(Editor editor) {
-
-        String fileName = ((EditorImpl) editor).getVirtualFile().toString();
-        return ServiceManager.getService(CommentsService.class).getComments(fileName);
+        VirtualFile file = FileDocumentManager.getInstance().getFile(editor.getDocument());
+        if (file != null) {
+            String fileName = file.toString();
+            return ServiceManager.getService(CommentsService.class).getComments(fileName);
+        }
+        return Collections.emptyList();
     }
 }
