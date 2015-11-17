@@ -38,6 +38,7 @@ public class RenderableComment {
         if (comment.getAuthorInfo() != null && comment.getAuthorInfo().getAvatar() != null) {
             IconLoader.setIcon(comment.getAuthorInfo().getAvatar(), label);
             label.setHorizontalAlignment(SwingConstants.LEFT);
+            label.setVerticalTextPosition(SwingConstants.TOP);
         }
     }
 
