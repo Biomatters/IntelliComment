@@ -18,7 +18,7 @@ public class IntelliBucketToolWindow implements ToolWindowFactory {
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         final ContentManager contentManager = toolWindow.getContentManager();
 
-        CommentsToolWindowRenderer commentsToolWindowRenderer = new CommentsToolWindowRenderer(FileEditorManager.getInstance(project));
+        CommentsToolWindowRenderer commentsToolWindowRenderer = new CommentsToolWindowRenderer(toolWindow, FileEditorManager.getInstance(project));
 
         final Content content = contentManager.getFactory().createContent(new JBScrollPane(commentsToolWindowRenderer), "Comments", false);
         contentManager.addContent(content);

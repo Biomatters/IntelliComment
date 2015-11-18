@@ -12,6 +12,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.wm.ToolWindow;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -28,8 +29,10 @@ public class CommentsToolWindowRenderer extends JComponent {
 
     private Editor editor;
     private CommentLayouter commentLayouter;
+    private ToolWindow toolWindow;
 
-    public CommentsToolWindowRenderer(FileEditorManager editorManager) {
+    public CommentsToolWindowRenderer(ToolWindow toolWindow, FileEditorManager editorManager) {
+        this.toolWindow = toolWindow;
         setEditor(editorManager.getSelectedTextEditor());
         //noinspection deprecation
         editorManager.addFileEditorManagerListener(new FileEditorManagerListener() {
@@ -122,11 +125,25 @@ public class CommentsToolWindowRenderer extends JComponent {
 
     private int lastWidth = 0;
 
+    private int getYOffset() {
+        // This is a bit hacky but ensures that we take any static header components into account (as
+        // editor.getHeaderComponent() seems to return null for html files even though a header is present)
+        if (!toolWindow.getAnchor().isHorizontal()) {
+            Point editorLocation = new Point(0, 0);
+            SwingUtilities.convertPointToScreen(editorLocation, editor.getContentComponent());
+            Point commentsLocation = new Point(0, 0);
+            SwingUtilities.convertPointToScreen(commentsLocation, this);
+            return commentsLocation.y - editorLocation.y;
+        }
+        //the case for if the tool box is docked underneath the editor window
+        return editor.getScrollingModel().getVerticalScrollOffset();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.translate(0, -editor.getScrollingModel().getVerticalScrollOffset());
+        g2.translate(0, -getYOffset());
         if(editor != null) {
             for(RenderableComment c : commentLayouter.getRenderableComments()) {
                 c.paint(g2, getWidth());
