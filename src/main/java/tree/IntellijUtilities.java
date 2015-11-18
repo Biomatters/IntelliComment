@@ -123,17 +123,6 @@ public class IntellijUtilities {
             Project currentProject = IntellijUtilities.getCurrentProject();
             if (currentProject != null) {
                 AbstractVcs vcs = VcsUtil.getVcsFor(currentProject, virtualFile);
-
-                // Attempt #2
-//                try {
-//                    Method method = GitBranchUtil.class.getMethod("getCurrentRepository", new Class[]{});
-//                    method.invoke(GitBranchUtil, new Object[]{});
-//                } catch (NoSuchMethodException e) {
-//                    e.printStackTrace();
-//                }
-//
-                // Attempt #1
-                 //Thread.currentThread().setContextClassLoader(currentProject.getClass().getClassLoader());
                 if (vcs instanceof GitVcs) {
                     return GitBranchUtil.getCurrentRepository(currentProject);
                 }

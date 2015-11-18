@@ -49,10 +49,8 @@ public class CommentsService {
     private String projectName = IntellijUtilities.getCurrentProject().getBaseDir().toString();
 
     /**
-     * Gets all comments for the given file name.
-     *
      * @param fileName The fully defined file name (ie include path: "/src/main/java/bitbucket/myClass.java" etc)
-     * @return
+     * @return all comments for the given file name.
      */
     public List<Comment> getComments(String fileName) {
         List<Comment> comments = getComments();
@@ -89,12 +87,13 @@ public class CommentsService {
                 if (gitStatusInfo != null) {
                     CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner,
                             gitStatusInfo.branch);
-                    int currentPullRequest = commentManager.getCurrentPullRequest();
-                    flat = commentManager.get(currentPullRequest);
+                    flat = commentManager.get();
                 } else {
                     flat = Collections.emptyList();
                 }
-                COMMENTS_REF.set(buildCommentHierachy(flat));
+                raw=flat;
+                List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
+                COMMENTS_REF.set(hierarchy);
             }
         };
         commentGetterThread.start();
@@ -102,6 +101,7 @@ public class CommentsService {
 
     }
 
+    List<Comment>raw;
     /**
      * Builds a list of comments from a flat structure into a hierarchy with children.
      * <p>
@@ -112,15 +112,14 @@ public class CommentsService {
      */
     private List<Comment> buildCommentHierachy(List<Comment> flat) {
         List<Comment> hierarchy = new ArrayList<>();
-        flat.stream().filter(Comment::isRoot).forEach(comment -> {
-            comment.setChildren(getChildrenOfComment(comment, flat));
+        flat.stream().forEach(comment -> {
+            comment.setChildren(buildCommentHierachy(getChildrenOfComment(comment)));
             hierarchy.add(comment);
         });
         return hierarchy;
     }
 
-    private List<Comment> getChildrenOfComment(Comment parent, List<Comment> raw) {
-
+    private List<Comment> getChildrenOfComment(Comment parent) {
         return raw.stream().filter(comment -> comment.getParentId() == parent.getCommentId()).collect(Collectors.toList());
     }
 }

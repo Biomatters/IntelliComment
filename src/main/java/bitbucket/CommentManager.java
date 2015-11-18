@@ -8,6 +8,7 @@ import tree.IntellijUtilities;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
@@ -28,7 +29,8 @@ public class CommentManager {
     private final String repoOwner;
     private final String repoSlug;
     private final String branch;
-    private int pullRequestId;
+    // Important to set this to -1, don't change without understanding the consequences (see getPullRequestId).
+    private int pullRequestId=-1;
 
     /**
      * @param repoOwner the current user's main.bitbucket username.
@@ -40,18 +42,16 @@ public class CommentManager {
         this.repoSlug = repoSlug;
         this.branch = branch;
 
-        // TODO The getCurrentPullRequest method isn't working yet.
-        this.pullRequestId = 1;//getCurrentPullRequest();
+        this.pullRequestId = getPullRequestId();
     }
 
     /**
      * Formats the pull request url by inserting the user's main.bitbucket userName and main.bitbucket pull request id.
      *
-     * @param pullRequestId the identifier for the current pull request.
      * @return the complete url.
      */
-    public String composePullRequestPath(int pullRequestId) {
-        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, pullRequestId);
+    public String composePullRequestPath() {
+        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, getPullRequestId());
     }
 
     /**
@@ -64,48 +64,37 @@ public class CommentManager {
      * @return the current pull request's id, or -1 if there is no pull request for this branch
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-423626332.html#pullrequestsResource-GETalistofopenpullrequests
      */
-    int getCurrentPullRequest() {
-        V2Response response;
-        // TODO Refactor the "makeSafeRequest" and use here, to avoid the duplicate code.
-        try {
-            response = rootTarget
+    int getPullRequestId() {
+        if (pullRequestId == -1) {
+            V2Response response = makeSafeRequest(() -> rootTarget
                     .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
                     .request(MediaType.APPLICATION_JSON_TYPE)
                     .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                    .get(V2Response.class);
-        } catch (NotAuthorizedException ex) {
-            // TODO Improve auth to be a bit more obvious rather than leaving in the constructor.
-            Auth auth = new Auth();
-            response = rootTarget
-                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
-                    .request(MediaType.APPLICATION_JSON_TYPE)
-                    .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                    .get(V2Response.class);
-        }
-        // TODO Find PRs made from the current branch and return the most recent of them.
+                    .get(V2Response.class));
 
-//        response.getValues().stream().filter(repo ->repo.).collect(V2Response.class);
-
-        GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
-        if (gitStatusInfo != null) {
-            for (V2PullRequest pullRequest : response.getValues()) {
-                if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
-                    return pullRequest.getId();
+            GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
+            if (gitStatusInfo != null) {
+                for (V2PullRequest pullRequest : response.getValues()) {
+                    if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
+                        return pullRequest.getId();
+                    }
                 }
             }
+            return -1;
+        } else {
+            return pullRequestId;
         }
-        return -1;
+
     }
 
     /**
      * Gets a list of comments for the given pull request by making a GET request to main.bitbucket's api.
      *
-     * @param id The pull request id.
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-1-0-296095210.html#pullrequestsResource1.0-GETalistofapullrequestcommentsRedDEPRECATED
      */
-    public List<Comment>  get(int id) {
-        return makeSafeRequest((Worker) () -> rootTarget
-                .path(composePullRequestPath(id))
+    public List<Comment> get() {
+        return makeSafeRequest(() -> rootTarget
+                .path(composePullRequestPath())
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
                 .get(new GenericType<List<Comment>>() {
@@ -120,25 +109,22 @@ public class CommentManager {
      * <p>
      * NB: Have made successful posts without "anchor" - not sure what this is. The bitbucket website posts an anchor.
      *
-     * @param id                  The pull request id.
-     * @param content             The comment body.
-     * @param destinationRevision The revision hash of the destination file.
-     * @param lineFrom            optional line number of the original file.
-     * @param lineTo              optional line number of the destination file.
+     * @param pullRequestId The pull request id.
+     * @param newComment    The comment to post. Only a few fields are needed, see the second constructor.
      */
-//    public void post(int id, String content, String destinationRevision,String lineTo, String lineFrom) {
-//        Comment comments = makeSafeRequest((Worker) () -> rootTarget
-//                .path(composePullRequestPath(id))
-//                .request(MediaType.APPLICATION_JSON_TYPE)
-//                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-//                .post(Comment.class));
-//    }
-
-    interface Worker {
-        List<Comment> makeRequest();
+    public Comment post(int pullRequestId, Comment newComment) {
+        return makeSafeRequest(() -> rootTarget
+                .path(pullRequestId + "")
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
+                .post(Entity.json(newComment), Comment.class));
     }
 
-    public List<Comment> makeSafeRequest(Worker worker) {
+    interface Worker<E> {
+        E makeRequest();
+    }
+
+    public <T> T makeSafeRequest(Worker<T> worker) {
         try {
             return worker.makeRequest();
         } catch (NotAuthorizedException ex) {

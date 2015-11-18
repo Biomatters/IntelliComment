@@ -69,27 +69,20 @@ public class Comment {
     }
 
     public void setChildren(List<Comment> children) {
-        if (this.children == null) {
-            children = new ArrayList<>();
-        }
         this.children = children;
     }
 
 
     /**
-     * Whether this is a comment with a line number that is not a reply.
-     *
-     * @return
+     * @return whether this is a comment with a line number - whether it is a leaf node.
      */
     public boolean isRoot() {
         return getLineNumber() != 0;
     }
 
     /**
-     * Returns the given line number. Lines start at index 1 and so 0 represents a comment not attached to a line.
+     * @return the given line number. Lines start at index 1 and so 0 represents a comment not attached to a line.
      * Examples are comments directly in the root of a pull request or replies to comments.
-     *
-     * @return
      */
     public int getLineNumber() {
         return lineFrom != 0 ? lineFrom : lineTo;
