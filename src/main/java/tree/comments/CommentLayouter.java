@@ -13,9 +13,60 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class CommentLayouter {
+public class CommentLayouter implements LayoutManager {
 
     private List<RenderableComment> renderableComments;
+
+    public boolean suspendNormalLayouting = false;
+
+    private Editor editor;
+
+    private Dimension preferredLayoutSize = new Dimension(100, 100);
+
+    @Override
+    public void addLayoutComponent(String name, Component comp) {
+        if (!(comp instanceof RenderableComment)) {
+            throw new IllegalArgumentException("This layout manager only supports renderable comments");
+        }
+        RenderableComment comment = (RenderableComment) comp;
+        renderableComments.add(comment);
+        Collections.sort(renderableComments, (o1, o2) -> o1.getComment().getLineNumber() - o2.getComment().getLineNumber());
+    }
+
+    @Override
+    public void removeLayoutComponent(Component comp) {
+        if (!(comp instanceof RenderableComment)) {
+            throw new IllegalArgumentException("This layout manager only supports renderable comments");
+        }
+        RenderableComment comment = (RenderableComment) comp;
+        renderableComments.remove(comment);
+        Collections.sort(renderableComments, (o1, o2) -> o1.getComment().getLineNumber() - o2.getComment().getLineNumber());
+    }
+
+    @Override
+    public Dimension preferredLayoutSize(Container parent) {
+        return preferredLayoutSize;
+    }
+
+    @Override
+    public Dimension minimumLayoutSize(Container parent) {
+        return preferredLayoutSize;
+    }
+
+    public CommentLayouter(Editor editor) {
+        renderableComments = new ArrayList<>();
+        replaceEditor(editor);
+    }
+
+    public void replaceEditor(Editor editor) {
+        renderableComments.clear();
+        this.editor = editor;
+        this.preferredLayoutSize = new Dimension(100, editor.getContentComponent().getHeight());
+    }
+
+    public void setSuspendNormalLayouting(boolean suspendNormalLayouting) {
+        this.suspendNormalLayouting = suspendNormalLayouting;
+    }
 
     /**
      * @param iconChangeListener Fired when the icon for any comment is loaded;
@@ -46,10 +97,9 @@ public class CommentLayouter {
      * Gradually moves comments associated with the given line towards their natural position.
      *
      * @param line         The line number
-     * @param editor   used to determine the Y position of a given line
      * @return true if at least one more iteration is needed
      */
-    public boolean iterateTowardLine(int line, Editor editor) {
+    public boolean iterateTowardLine(int line) {
         final AtomicInteger lineY = new AtomicInteger();
 
         int maxDist = 0;
@@ -66,7 +116,7 @@ public class CommentLayouter {
                 if (comment.lineContainedInComment(line)) {
                     int dist = comment.getY() - correctEditorY(comment, lineY.get());
                     maxDist = Math.max(Math.abs(dist), maxDist);
-                    comment.setY(comment.getY() - (int) (dist * 0.25));
+                    setYForComment(comment, comment.getY() - (int) (dist * 0.25));
                     existingBounds.add(comment.getBounds());
                     selectedCommentIndex = i;
                     break;
@@ -78,12 +128,12 @@ public class CommentLayouter {
             //fit the other comments around them
             for (int i = selectedCommentIndex - 1; i >= 0; i--) {
                 RenderableComment comment = renderableComments.get(i);
-                comment.setY(getYForComment(editor, comment));
+                setYForComment(comment, getYForComment(editor, comment));
                 moveForOverlaps(comment, existingBounds);
             }
             for (int i = selectedCommentIndex + 1; i < renderableComments.size(); i++) {
                 RenderableComment comment = renderableComments.get(i);
-                comment.setY(getYForComment(editor, comment));
+                setYForComment(comment, getYForComment(editor, comment));
                 moveForOverlaps(comment, existingBounds);
             }
         } catch (InterruptedException | InvocationTargetException e) {
@@ -92,12 +142,17 @@ public class CommentLayouter {
         return maxDist > 4;
     }
 
-    public void layoutComments(Editor editor) {
+    public void layoutContainer(Container parent) {
+        if (suspendNormalLayouting) {
+            return;
+        }
         List<Rectangle> existingBounds = new ArrayList<>();
 
         int caretLine = editor.getCaretModel().getPrimaryCaret().getLogicalPosition().line+1;
 
         for(RenderableComment c : renderableComments) {
+            c.setSize(parent.getWidth(), 10);
+            c.setSize(parent.getWidth(), c.getPreferredSize().height);
             int lineY = getYForLineNumber(editor, c.getComment().getLineNumber());
             if (editor.hasHeaderComponent() && editor.getHeaderComponent() != null) {
                 lineY += editor.getHeaderComponent().getY() + editor.getHeaderComponent().getHeight();
@@ -106,17 +161,18 @@ public class CommentLayouter {
 
             //find a place for the comment
             c.setLineY(lineY);
-            c.setY(correctEditorY(c, lineY));
-
-
-
-
+            setYForComment(c, lineY);
 
             moveForOverlaps(c, existingBounds);
 
 
             updateCommentProperties(caretLine);
         }
+        System.out.println("layout done");
+    }
+
+    private void setYForComment(RenderableComment comment, int y) {
+        comment.setLocation(2 * RenderableComment.padding, y);
     }
 
     private int getYForComment(Editor editor, RenderableComment comment) throws InvocationTargetException, InterruptedException {
@@ -151,9 +207,9 @@ public class CommentLayouter {
         int desiredY = c.getY();
         int diff = RenderableComment.padding;
         while (hasOverlap(existingBounds, c.getBounds())) {
-            c.setY(desiredY - diff);
+            setYForComment(c, desiredY - diff);
             if (hasOverlap(existingBounds, c.getBounds())) {
-                c.setY(desiredY + diff);
+                setYForComment(c, desiredY + diff);
             }
             diff++;
         }

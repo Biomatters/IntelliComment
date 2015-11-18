@@ -24,8 +24,8 @@ public class IconLoader {
         Runnable r = () -> {
             try {
                 Image remoteImage = cache.get(url);
-                Image scaledInstance = remoteImage.getScaledInstance(32, 32, Image.SCALE_SMOOTH);
-                label.setIcon(new ImageIcon(scaledInstance));
+                final Image scaledInstance = remoteImage.getScaledInstance(32, 32, Image.SCALE_SMOOTH);
+                SwingUtilities.invokeLater(() -> label.setIcon(new ImageIcon(scaledInstance)));
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }

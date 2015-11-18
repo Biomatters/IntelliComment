@@ -10,6 +10,8 @@ import com.intellij.ui.content.ContentManager;
 import org.jetbrains.annotations.NotNull;
 import tree.comments.CommentsToolWindowRenderer;
 
+import java.awt.*;
+
 /**
  * Created by the Biomatters and the Webapps Team for the betterment of mankind.
  */
@@ -20,7 +22,13 @@ public class IntelliBucketToolWindow implements ToolWindowFactory {
 
         CommentsToolWindowRenderer commentsToolWindowRenderer = new CommentsToolWindowRenderer(FileEditorManager.getInstance(project));
 
-        final Content content = contentManager.getFactory().createContent(new JBScrollPane(commentsToolWindowRenderer), "Comments", false);
+        JBScrollPane scrollPane = new JBScrollPane(commentsToolWindowRenderer);
+        scrollPane.getVerticalScrollBar().setVisible(false);
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
+        scrollPane.getViewport().setBorder(null);
+        scrollPane.setViewportBorder(null);
+        scrollPane.setBorder(null);
+        final Content content = contentManager.getFactory().createContent(scrollPane, "Comments", false);
         contentManager.addContent(content);
     }
 }

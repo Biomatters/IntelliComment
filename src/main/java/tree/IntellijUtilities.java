@@ -14,8 +14,11 @@ import git4idea.repo.GitRemote;
 import git4idea.repo.GitRepository;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,7 +30,16 @@ import java.util.regex.Pattern;
 public class IntellijUtilities {
 
     public static Project getCurrentProject() {
-        return CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext());
+        if (SwingUtilities.isEventDispatchThread()) {
+            return CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext());
+        }
+        final AtomicReference<Project> project = new AtomicReference<>();
+        try {
+            SwingUtilities.invokeAndWait(() -> project.set(CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext())));
+        } catch (InterruptedException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+        return project.get();
     }
 
 

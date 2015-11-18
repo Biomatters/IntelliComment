@@ -82,6 +82,7 @@ public class CommentsService {
                     gitStatusInfo.branch);
             int currentPullRequest = commentManager.getCurrentPullRequest();
             comments = commentManager.get(currentPullRequest);
+            comments.stream().filter(comment -> comment.getLineNumber() > 0);
         } else {
             comments = Collections.emptyList();
         }

@@ -5,18 +5,17 @@ import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.beans.PropertyChangeListener;
 
-public class RenderableComment {
+public class RenderableComment extends JComponent {
 
     static final int commentHeight = 50;
     static final int padding = 10;
 
     private Comment comment;
-
-    private int y;
 
     private int lineY;
 
@@ -35,11 +34,14 @@ public class RenderableComment {
         }
         label.setOpaque(false);
         label.setForeground(JBColor.BLACK);
+        this.setLayout(new GridLayout(1, 1));
         if (comment.getAuthorInfo() != null && comment.getAuthorInfo().getAvatar() != null) {
             IconLoader.setIcon(comment.getAuthorInfo().getAvatar(), label);
             label.setHorizontalAlignment(SwingConstants.LEFT);
             label.setVerticalTextPosition(SwingConstants.TOP);
         }
+        this.add(label);
+        this.setBorder(new EmptyBorder(padding, padding, padding, 4 * padding));
     }
 
     public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
@@ -48,14 +50,6 @@ public class RenderableComment {
 
     public Comment getComment() {
         return comment;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public void setY(int y) {
-        this.y = y;
     }
 
     @SuppressWarnings("unused")
@@ -93,23 +87,20 @@ public class RenderableComment {
         return lineNumber == comment.getLineNumber();
     }
 
-    /**
-     * This should be used for the Y bounds only - X bounds are dependent on container width
-     */
-    public Rectangle getBounds() {
-        return new Rectangle(2 * padding, y - label.getPreferredSize().height / 2 - padding, 3 * padding, label.getPreferredSize().height + 2 * padding);
-    }
 
-    public void paint(Graphics2D g, int containerWidth) {
-        int height = label.getPreferredSize().height+padding;
+    public void paintComponent(Graphics g1) {
+
+        Graphics2D g = (Graphics2D) g1;
+        int height = getSize().height;
         float lineWidth = cursorInLine ? 2.0f : 1.0f;
         Color backgroundColor = cursorInLine ? new JBColor(0xe5f1ff, 0x344b67) : JBColor.white;
         Color borderColor = JBColor.gray;
 
         g.setStroke(new BasicStroke(lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL, lineWidth));
 
-        Shape commentBubble = new RoundRectangle2D.Double(2*padding, y-height/2, containerWidth-3*padding, height, 15, 15);
-        Polygon commentArrow = new Polygon(new int[] {padding/2, 2*padding+1, 2*padding+1}, new int[] {lineY, y-padding/2, y+padding/2}, 3);
+        Shape commentBubble = new RoundRectangle2D.Double(0, padding / 2, getBounds().width - 3 * padding, height - padding, 15, 15);
+        Polygon commentArrow = new Polygon(new int[]{-3 * padding / 2, 1, 1}, new int[]{lineY - getBounds().y, getHeight() / 2 - padding / 2, getHeight() / 2 + padding / 2}, 3);
+
 
 
         //draw the bubble...
@@ -118,24 +109,26 @@ public class RenderableComment {
         g.setColor(borderColor);
         g.draw(commentBubble);
 
+
         //draw the arrow
+        Shape oldClip = g.getClip();
+        g.setClip(null);
         g.setColor(backgroundColor);
         g.draw(commentArrow);
         g.fill(commentArrow);
         g.setColor(borderColor);
         g.drawLine(commentArrow.xpoints[0], commentArrow.ypoints[0], commentArrow.xpoints[1]-1, commentArrow.ypoints[1]);
         g.drawLine(commentArrow.xpoints[0], commentArrow.ypoints[0], commentArrow.xpoints[2]-1, commentArrow.ypoints[2]);
-
-
-        //text for the bubble...
-        label.setSize(new Dimension(containerWidth-5*padding, commentHeight-2*padding));
-        label.setSize(new Dimension(containerWidth - 5 * padding, label.getPreferredSize().height));
-        g.translate(3 * padding, y - label.getPreferredSize().height / 2);
-        Shape oldClip = g.getClip();
-        g.clipRect(0, 0, containerWidth - 5 * padding, label.getPreferredSize().height);
-        label.paint(g);
         g.setClip(oldClip);
-        g.translate(-3 * padding, -y + label.getPreferredSize().height / 2);
 
+        super.paintComponent(g);
+    }
+
+    @Override
+    protected void paintChildren(Graphics g) {
+        Shape oldClip = g.getClip();
+        g.clipRect(0, padding / 2, getBounds().width - 3 * padding, getSize().height - padding);
+        super.paintChildren(g);
+        g.setClip(oldClip);
     }
 }

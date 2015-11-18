@@ -12,6 +12,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.components.JBPanel;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -23,14 +24,16 @@ import java.util.List;
 /**
  * A window for rendering comments - follows the selected text editor, and tries to match its scroll position.
  */
-public class CommentsToolWindowRenderer extends JComponent {
+public class CommentsToolWindowRenderer extends JBPanel {
 
 
     private Editor editor;
     private CommentLayouter commentLayouter;
 
     public CommentsToolWindowRenderer(FileEditorManager editorManager) {
+        commentLayouter = new CommentLayouter(editorManager.getSelectedTextEditor());
         setEditor(editorManager.getSelectedTextEditor());
+        this.setLayout(commentLayouter);
         //noinspection deprecation
         editorManager.addFileEditorManagerListener(new FileEditorManagerListener() {
             @Override
@@ -48,6 +51,11 @@ public class CommentsToolWindowRenderer extends JComponent {
                 setEditor(fileEditorManagerEvent.getManager().getSelectedTextEditor());
             }
         });
+    }
+
+    @Override
+    public boolean isOptimizedDrawingEnabled() {
+        return false;
     }
 
     PropertyChangeListener iconChangeListener = evt -> refreshLayout();
@@ -76,34 +84,54 @@ public class CommentsToolWindowRenderer extends JComponent {
     private void refreshLayout() {
         SwingUtilities.invokeLater(() -> {
             if (commentLayouter != null) {
-                commentLayouter.layoutComments(editor);
-                repaint();
+                invalidate();
             }
         });
     }
 
     private Thread centeringThread;
 
-    private void centerForLine(int line) {
+    private boolean suspendNormalLayouting = false;
+
+    private void centerForLine(final int line) {
         if (centeringThread != null && centeringThread.isAlive()) {
             centeringThread.interrupt();
         }
 
         Runnable r = () -> {
-            while (commentLayouter.iterateTowardLine(line, editor)) {
+            commentLayouter.setSuspendNormalLayouting(true);
+            while (commentLayouter.iterateTowardLine(line)) {
                 repaint();
                 try {
                     Thread.sleep(30);
                 } catch (InterruptedException ex) {
+                    commentLayouter.setSuspendNormalLayouting(false);
                     return;
                 }
             }
+            commentLayouter.setSuspendNormalLayouting(false);
         };
         centeringThread = new Thread(r, "Moving comment to line");
         centeringThread.start();
     }
 
-    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> repaint();
+    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> {
+        JViewport viewport = getViewport(this);
+        if (viewport != null) {
+            viewport.setViewPosition(new Point(0, editor.getScrollingModel().getVerticalScrollOffset()));
+        }
+        repaint();
+    };
+
+    private JViewport getViewport(Component component) {
+        if (component instanceof JViewport) {
+            return (JViewport) component;
+        }
+        if (component.getParent() != null) {
+            return getViewport(component.getParent());
+        }
+        return null;
+    }
 
     private void setEditor(Editor ed) {
         if(editor != null) {
@@ -111,12 +139,18 @@ public class CommentsToolWindowRenderer extends JComponent {
             editor.getCaretModel().removeCaretListener(caretListener);
         }
         this.editor = ed;
+        commentLayouter.replaceEditor(ed);
+        this.removeAll();
+        for (Comment c : getCommentsForFile(ed)) {
+            if (c.getLineNumber() == 0) {
+                continue;
+            }
+            this.add("" + c.getCommentId(), new RenderableComment(c));
+        }
         editor.getCaretModel().addCaretListener(caretListener);
         editor.getScrollingModel().addVisibleAreaListener(visibleAreaListener);
-        commentLayouter = new CommentLayouter(getCommentsForFile(editor), iconChangeListener);
-        commentLayouter.layoutComments(editor);
 //        editor.getGutter().registerTextAnnotation(gutterProvider);
-        setPreferredSize(new Dimension(100 /*default (basically min) width*/, 100/*editor.getContentComponent().getHeight()*/));
+        setPreferredSize(new Dimension(100 /*default (basically min) width*/, editor.getContentComponent().getHeight()));
         this.invalidate();
     }
 
@@ -126,19 +160,23 @@ public class CommentsToolWindowRenderer extends JComponent {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.translate(0, -editor.getScrollingModel().getVerticalScrollOffset());
-        if(editor != null) {
-            for(RenderableComment c : commentLayouter.getRenderableComments()) {
-                c.paint(g2, getWidth());
-            }
+        if (isOpaque()) {
+            g.setColor(getBackground());
+            g.fillRect(0, 0, getWidth(), getHeight());
         }
+//        g2.translate(0, -editor.getScrollingModel().getVerticalScrollOffset());
+//        if(editor != null) {
+//            for(RenderableComment c : commentLayouter.getRenderableComments()) {
+//                c.paint(g2, getWidth());
+//            }
+//        }
         super.paintComponent(g);
 
-        //force refreshing the layout to ensure that labels don't overlap (their height depends on the width of this component)
-        if (getWidth() != lastWidth) {
-            lastWidth = getWidth();
-            refreshLayout();
-        }
+//        //force refreshing the layout to ensure that labels don't overlap (their height depends on the width of this component)
+//        if (getWidth() != lastWidth) {
+//            lastWidth = getWidth();
+//            refreshLayout();
+//        }
     }
 
     private List<Comment> getCommentsForFile(Editor editor) {
