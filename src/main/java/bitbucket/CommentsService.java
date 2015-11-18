@@ -85,13 +85,12 @@ public class CommentsService {
                 GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
                 List<Comment> flat;
                 if (gitStatusInfo != null) {
-                    CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner,
-                            gitStatusInfo.branch);
+                    CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner);
                     flat = commentManager.get();
                 } else {
                     flat = Collections.emptyList();
                 }
-                raw=flat;
+                raw = flat;
                 List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
                 COMMENTS_REF.set(hierarchy);
             }
@@ -101,7 +100,8 @@ public class CommentsService {
 
     }
 
-    List<Comment>raw;
+    List<Comment> raw;
+
     /**
      * Builds a list of comments from a flat structure into a hierarchy with children.
      * <p>

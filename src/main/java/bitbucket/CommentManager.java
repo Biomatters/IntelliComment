@@ -28,19 +28,17 @@ public class CommentManager {
     private final WebTarget rootTarget;
     private final String repoOwner;
     private final String repoSlug;
-    private final String branch;
     // Important to set this to -1, don't change without understanding the consequences (see getPullRequestId).
-    private int pullRequestId=-1;
+    private int pullRequestId = -1;
 
     /**
      * @param repoOwner the current user's main.bitbucket username.
      */
-    public CommentManager(String repoSlug, String repoOwner, String branch) {
+    public CommentManager(String repoSlug, String repoOwner) {
         // TODO Extract rootTarget out when we add DI.
         rootTarget = ClientBuilder.newClient().target(Config.BITBUCKET_URL);
         this.repoOwner = repoOwner;
         this.repoSlug = repoSlug;
-        this.branch = branch;
 
         this.pullRequestId = getPullRequestId();
     }
