@@ -15,6 +15,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,10 +25,11 @@ import java.util.regex.Pattern;
 public class Auth {
 
     private static String ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token";
-
+    private static AtomicReference<Boolean> running = new AtomicReference<>();
     Thread listener;
 
     public Auth() {
+        running.set(false);
         // Start server to wait for bitbucket response from the OAuth process.
         authenticateUser();
 
@@ -43,11 +45,9 @@ public class Auth {
         }
     }
 
-    private static boolean running = false;
-
     private void promptUserForCredentials() {
-        // Prevent multiple requests. TODO What's the best way to do this in java? - Current implementation doesn't work.
-        if (!running) {
+        // Prevent multiple requests.
+        if (!running.get()) {
             if (Desktop.isDesktopSupported()) {
                 try {
                     String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.APP_KEY);
@@ -115,7 +115,7 @@ public class Auth {
         } catch (IOException ignored) {
             // Fail silently, this is only clean up.
         }
-        running = false;
+        running.set(false);
         return code;
     }
 
