@@ -10,7 +10,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import java.awt.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -50,7 +53,7 @@ public class Auth {
         if (!running.get()) {
             if (Desktop.isDesktopSupported()) {
                 try {
-                    String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.APP_KEY);
+                    String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.getAppKey());
                     Desktop.getDesktop().browse(new URI(urlString));
                 } catch (IOException | URISyntaxException e) {
                     e.printStackTrace();
@@ -121,37 +124,31 @@ public class Auth {
 
     private void getAndSaveAccessToken(String code) {
 
-        Config.AccessAndRefreshToken accessAndRefreshToken = Config.loadUserTokensFromPreferences();
-
         String accessToken;
         String refreshToken;
-        if (accessAndRefreshToken == null) {
-            // go get them!
-            Form form = new Form();
-            form.param("grant_type", "authorization_code");
-            form.param("code", code);
+        // go get them!
+        Form form = new Form();
+        form.param("grant_type", "authorization_code");
+        form.param("code", code);
 
-            WebTarget url = ClientBuilder.newClient().target(ACCESS_TOKEN_URL);
-            Invocation.Builder builder = url
-                    .request(MediaType.APPLICATION_JSON_TYPE);
+        WebTarget url = ClientBuilder.newClient().target(ACCESS_TOKEN_URL);
+        Invocation.Builder builder = url
+                .request(MediaType.APPLICATION_JSON_TYPE);
 
-            // Create a header of the form "Authorization: Basic {client_id:client_secret}".
-            byte[] secrets = (Config.APP_KEY + ":" + Config.APP_SECRET).getBytes();
-            String base64 = Base64.encodeBase64String(secrets);
+        // Create a header of the form "Authorization: Basic {client_id:client_secret}".
+        byte[] secrets = (Config.getAppKey() + ":" + Config.getAppSecret()).getBytes();
+        String base64 = Base64.encodeBase64String(secrets);
 
-            AccessTokenResponse response = builder
-                    .header("Authorization", "Basic " + base64)
-                    .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), AccessTokenResponse.class);
-            accessToken = response.getAccessToken();
-            refreshToken = response.getRefreshToken();
+        AccessTokenResponse response = builder
+                .header("Authorization", "Basic " + base64)
+                .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), AccessTokenResponse.class);
+        accessToken = response.getAccessToken();
+        refreshToken = response.getRefreshToken();
 
-            Config.saveUserTokensToPreferences(accessToken, refreshToken);
-        } else {
-            accessToken = accessAndRefreshToken.accessToken;
-            refreshToken = accessAndRefreshToken.refreshToken;
-        }
+        // Persist the tokens.
+        Config.saveUserTokensToPreferences(accessToken, refreshToken);
 
-        // Save the user access and refresh token for use later.
+        // Now save the user access and refresh token in memory for use later.
         Config.User.setAccessToken(accessToken);
         Config.User.setRefreshToken(refreshToken);
     }

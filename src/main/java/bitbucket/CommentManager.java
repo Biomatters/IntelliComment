@@ -6,15 +6,12 @@ import bitbucket.models.V2Response;
 import tree.GitStatusInfo;
 import tree.IntellijUtilities;
 
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by the Biomatters and the Phyla team for the betterment of mankind.
@@ -64,20 +61,26 @@ public class CommentManager {
      */
     int getPullRequestId() {
         if (pullRequestId == -1) {
-            V2Response response = makeSafeRequest(() -> rootTarget
-                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
-                    .request(MediaType.APPLICATION_JSON_TYPE)
-                    .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                    .get(V2Response.class));
+            (new Thread() {
+                @Override
+                public void run() {
+                    V2Response response = rootTarget
+                            .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
+                            .request(MediaType.APPLICATION_JSON_TYPE)
+                            .header("Authorization", String.format("Bearer %s", Config.User.getAccessToken()))
+                            .get(V2Response.class);
 
-            GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
-            if (gitStatusInfo != null) {
-                for (V2PullRequest pullRequest : response.getValues()) {
-                    if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
-                        return pullRequest.getId();
+                    GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
+                    if (gitStatusInfo != null) {
+                        for (V2PullRequest pullRequest : response.getValues()) {
+                            if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
+                                pullRequestId = pullRequest.getId();
+                                break;
+                            }
+                        }
                     }
                 }
-            }
+            }).run();
             return -1;
         } else {
             return pullRequestId;
@@ -91,12 +94,17 @@ public class CommentManager {
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-1-0-296095210.html#pullrequestsResource1.0-GETalistofapullrequestcommentsRedDEPRECATED
      */
     public List<Comment> get() {
-        return makeSafeRequest(() -> rootTarget
-                .path(composePullRequestPath())
-                .request(MediaType.APPLICATION_JSON_TYPE)
-                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                .get(new GenericType<List<Comment>>() {
-                }));
+        // Don't make a request if we don't have the pull request id yet.
+        if (pullRequestId != -1) {
+            return rootTarget
+                    .path(composePullRequestPath())
+                    .request(MediaType.APPLICATION_JSON_TYPE)
+                    .header("Authorization", String.format("Bearer %s", Config.User.getAccessToken()))
+                    .get(new GenericType<List<Comment>>() {
+                    });
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -111,24 +119,10 @@ public class CommentManager {
      * @param newComment    The comment to post. Only a few fields are needed, see the second constructor.
      */
     public Comment post(int pullRequestId, Comment newComment) {
-        return makeSafeRequest(() -> rootTarget
+        return rootTarget
                 .path(pullRequestId + "")
                 .request(MediaType.APPLICATION_JSON_TYPE)
-                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                .post(Entity.json(newComment), Comment.class));
-    }
-
-    interface Worker<E> {
-        E makeRequest();
-    }
-
-    public <T> T makeSafeRequest(Worker<T> worker) {
-        try {
-            return worker.makeRequest();
-        } catch (NotAuthorizedException ex) {
-            // TODO Improve auth to be a bit more obvious rather than leaving in the constructor.
-            Auth auth = new Auth();
-            return worker.makeRequest();
-        }
+                .header("Authorization", String.format("Bearer %s", Config.User.getAccessToken()))
+                .post(Entity.json(newComment), Comment.class);
     }
 }
