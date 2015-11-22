@@ -1,14 +1,11 @@
 package bitbucket;
 
 import bitbucket.models.Comment;
-import tree.GitStatusInfo;
 import tree.IntellijUtilities;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -19,9 +16,12 @@ import java.util.stream.Collectors;
 public class CommentsService {
 
     private static final AtomicReference<List<Comment>> COMMENTS_REF = new AtomicReference<>(null);
+    List<Comment> raw;
+    private CommentManager commentManager;
+    private String projectName = IntellijUtilities.getCurrentProject().getBaseDir().toString();
 
-    // This will get called when an instance of this class is instantiated via reflection.
     {
+        // The polling thread will get started when an instance of this class is instantiated via reflection.
         Thread pollingThread = new Thread(() -> {
             while (true) {
                 refreshComments();
@@ -34,19 +34,11 @@ public class CommentsService {
         });
         pollingThread.setDaemon(true);
         pollingThread.start();
-
-        // Preload the comments.
-        getComments();
     }
 
     public List<Comment> getComments() {
-        if (COMMENTS_REF.get() == null) {
-            refreshComments();
-        }
         return COMMENTS_REF.get();
     }
-
-    private String projectName = IntellijUtilities.getCurrentProject().getBaseDir().toString();
 
     /**
      * @param fileName The fully defined file name (ie include path: "/src/main/java/bitbucket/myClass.java" etc)
@@ -60,15 +52,8 @@ public class CommentsService {
 
         final String name = fileName.replace(projectName, "").substring(1);
 
-        List<Comment> filtered = comments.stream().filter(new Predicate<Comment>() {
-            @Override
-            public boolean test(Comment comment) {
-                return (comment.getFilename() != null)
-                        && comment.getFilename().contains(name);
-            }
-        }).collect(Collectors.toList());
-
-        return filtered;
+        return comments.stream().filter(comment -> (comment.getFilename() != null)
+                && comment.getFilename().contains(name)).collect(Collectors.toList());
 
     }
 
@@ -82,26 +67,16 @@ public class CommentsService {
         Thread commentGetterThread = new Thread() {
             @Override
             public void run() {
-                GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
-                List<Comment> flat;
-                if (gitStatusInfo != null) {
-                    CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner,
-                            gitStatusInfo.branch);
-                    flat = commentManager.get();
-                } else {
-                    flat = Collections.emptyList();
-                }
-                raw=flat;
+                commentManager = new CommentManager();
+                List<Comment> flat = commentManager.get();
+                raw = flat;
                 List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
                 COMMENTS_REF.set(hierarchy);
             }
         };
         commentGetterThread.start();
-
-
     }
 
-    List<Comment>raw;
     /**
      * Builds a list of comments from a flat structure into a hierarchy with children.
      * <p>

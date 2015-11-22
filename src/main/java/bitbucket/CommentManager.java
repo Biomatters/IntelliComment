@@ -12,9 +12,8 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Optional;
 
 /**
  * Created by the Biomatters and the Phyla team for the betterment of mankind.
@@ -26,23 +25,19 @@ public class CommentManager {
     // The path for the pull request, parameter 1 is the userName, parameter 2 is the pull request id.
     private final static String PULL_REQUEST_PATH = "/1.0/repositories/%s/%s/pullrequests/%s/comments";
     private final WebTarget rootTarget;
-    private final String repoOwner;
-    private final String repoSlug;
-    private final String branch;
-    // Important to set this to -1, don't change without understanding the consequences (see getPullRequestId).
-    private int pullRequestId=-1;
+    private String branch;
+    private String repoOwner;
+    private String repoSlug;
 
-    /**
-     * @param repoOwner the current user's main.bitbucket username.
-     */
-    public CommentManager(String repoSlug, String repoOwner, String branch) {
+    public CommentManager() {
         // TODO Extract rootTarget out when we add DI.
         rootTarget = ClientBuilder.newClient().target(Config.BITBUCKET_URL);
-        this.repoOwner = repoOwner;
-        this.repoSlug = repoSlug;
-        this.branch = branch;
-
-        this.pullRequestId = getPullRequestId();
+        GitStatusInfo current = IntellijUtilities.getGitStatusInfo();
+        if (null != current) {
+            this.repoOwner = current.repoOwner;
+            this.repoSlug = current.repoSlug;
+            this.branch = current.branch;
+        }
     }
 
     /**
@@ -59,32 +54,31 @@ public class CommentManager {
      * <p>
      * Queries the open pull requests for the current branch via the bitbucket api.
      * Searches these for a branch which matches that passed in. If matches then returns the id for that PR.
-     * TODO If there are multiple for the same branch, will take the most recent open branch.
      *
      * @return the current pull request's id, or -1 if there is no pull request for this branch
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-423626332.html#pullrequestsResource-GETalistofopenpullrequests
      */
     int getPullRequestId() {
-        if (pullRequestId == -1) {
-            V2Response response = makeSafeRequest(() -> rootTarget
-                    .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
-                    .request(MediaType.APPLICATION_JSON_TYPE)
-                    .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                    .get(V2Response.class));
-
-            GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
-            if (gitStatusInfo != null) {
-                for (V2PullRequest pullRequest : response.getValues()) {
-                    if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
-                        return pullRequest.getId();
-                    }
-                }
-            }
-            return -1;
+        V2Response response = makeSafeRequest(() -> rootTarget
+                .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
+                .get(V2Response.class));
+        Optional<V2PullRequest> current = getMostRecentPullRequestForTheCurrentBranch(response);
+        if (current.isPresent()) {
+            return current.get().getId();
         } else {
-            return pullRequestId;
+            return -1;
         }
+    }
 
+    public Optional<V2PullRequest> getMostRecentPullRequestForTheCurrentBranch(V2Response response) {
+        // Get all pull requests for this branch.
+        return response.getValues()
+                .stream()
+                .filter(pullRequest -> pullRequest.getSource().getBranch().getName().equals(branch))
+                .sorted((p1, p2) -> p1.getCreatedOn().compareTo(p2.getCreatedOn()))
+                .findFirst();
     }
 
     /**
@@ -120,10 +114,6 @@ public class CommentManager {
                 .post(Entity.json(newComment), Comment.class));
     }
 
-    interface Worker<E> {
-        E makeRequest();
-    }
-
     public <T> T makeSafeRequest(Worker<T> worker) {
         try {
             return worker.makeRequest();
@@ -132,5 +122,9 @@ public class CommentManager {
             Auth auth = new Auth();
             return worker.makeRequest();
         }
+    }
+
+    interface Worker<E> {
+        E makeRequest();
     }
 }

@@ -1,15 +1,17 @@
 package bitbucket.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Date;
 
 /**
  * Created by the Biomatters and the Webapps Team for the betterment of mankind.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class V2PullRequest {
-//    public String description;
+    //    public String description;
 //    public String links;
 //    public String title;
 //    public Boolean closeSourceBranch;
@@ -22,13 +24,22 @@ public class V2PullRequest {
 //    // TODO Not really a string, hoping to ignore.
 //    public String author;
 //    // TODO Parse to java date.
-//    public String createdOn;
-//    public String updatedOn;
+    private Date createdOn;
+    //    public String updatedOn;
 //    public String type;
-    public int id;
-    public V2SourceOrDestination source;
+    private int id;
+    private V2SourceOrDestination source;
 
-//    public String getDescription() {
+    public Date getCreatedOn() {
+        return createdOn;
+    }
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd,HH:00", timezone = "CET")
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    //    public String getDescription() {
 //        return description;
 //    }
 //
