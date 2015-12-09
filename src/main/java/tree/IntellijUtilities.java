@@ -30,6 +30,14 @@ public class IntellijUtilities {
         return CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext());
     }
 
+
+    public static String getRelativePath(VirtualFile parent, VirtualFile child) {
+        if (child.getPath().startsWith(parent.getPath())) {
+            return child.getPath().substring(parent.getPath().length() + 1);
+        }
+        throw new RuntimeException(child + " is not a child file of " + parent);
+    }
+
     /**
      * @return attempts to return all the necessary pieces of information regarding the current git status of a file -
      * the repo it belongs to, the current branch being displayed, and the username for the repo. Returns null if
