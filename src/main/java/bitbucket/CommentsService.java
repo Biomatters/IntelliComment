@@ -2,6 +2,7 @@ package bitbucket;
 
 import bitbucket.models.Comment;
 import com.intellij.openapi.application.ApplicationManager;
+import tree.GitStatusInfo;
 import tree.IntellijUtilities;
 
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ public class CommentsService {
         // IntelliJ recommends using "executeOnPooledThread", rather than "Thread".
         // @see http://stackoverflow.com/questions/18725340/create-a-background-task-in-intellij-plugin
         ApplicationManager.getApplication().executeOnPooledThread((Runnable) () -> {
+            GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
+            commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner, gitStatusInfo.branch);
             // The polling thread will get started when an instance of this class is instantiated via reflection.
             while (true) {
                 refreshComments();
@@ -59,17 +62,7 @@ public class CommentsService {
 
     }
 
-    public List<Comment> getCommentsAndRefresh() {
-        refreshComments();
-        return getComments();
-    }
-
     private void refreshComments() {
-//        // This needs to be done in a separate thread as Swing stuff will be coming through here
-//        Thread commentGetterThread = new Thread() {
-//            @Override
-//            public void run() {
-        commentManager = new CommentManager();
         List<Comment> flat = commentManager.get();
         raw = flat;
         List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));

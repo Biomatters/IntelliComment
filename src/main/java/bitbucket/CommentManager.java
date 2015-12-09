@@ -3,8 +3,6 @@ package bitbucket;
 import bitbucket.models.Comment;
 import bitbucket.models.V2PullRequest;
 import bitbucket.models.V2Response;
-import tree.GitStatusInfo;
-import tree.IntellijUtilities;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.ClientBuilder;
@@ -12,11 +10,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by the Biomatters and the Phyla team for the betterment of mankind.
@@ -33,16 +29,13 @@ public class CommentManager {
     private String repoSlug;
     private int pullRequestId;
 
-    public CommentManager() {
-        // TODO Extract rootTarget out when we add DI.
+    public CommentManager(String repoSlug, String repoOwner,String branch) {
         rootTarget = ClientBuilder.newClient().target(Config.BITBUCKET_URL);
-        GitStatusInfo current = IntellijUtilities.getGitStatusInfo();
-        if (null != current) {
-            this.repoOwner = current.repoOwner;
-            this.repoSlug = current.repoSlug;
-            this.branch = current.branch;
-            refreshPullRequestId();
-        }
+        this.repoOwner = repoOwner;
+        this.repoSlug = repoSlug;
+        this.branch = branch;
+
+        getPullRequestId();
     }
 
     /**
@@ -54,7 +47,7 @@ public class CommentManager {
     public void setBranch(String branch) {
         this.branch = branch;
         // Now we need to see if there is any open pull requests for this branch.
-        refreshPullRequestId();
+        getPullRequestId();
     }
 
     /**
@@ -75,14 +68,15 @@ public class CommentManager {
      * @return the current pull request's id, or -1 if there is no pull request for this branch
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-423626332.html#pullrequestsResource-GETalistofopenpullrequests
      */
-    private void refreshPullRequestId() {
-        V2Response response = makeSafeRequest(() -> rootTarget
+    private void getPullRequestId() {
+        V2Response response = rootTarget
                 .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
                 .request(MediaType.APPLICATION_JSON_TYPE)
-                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                .get(V2Response.class));
-        Optional<V2PullRequest> current = getMostRecentPullRequestForTheCurrentBranch(response);
-        pullRequestId = current.isPresent() ? current.get().getId() : -1;
+                .header("Authorization", String.format("Bearer %s", Config.User.getAccessToken()))
+                .get(V2Response.class);
+
+        Optional<V2PullRequest> mostRecent = getMostRecentPullRequestForTheCurrentBranch(response);
+        mostRecent.ifPresent(pr -> pullRequestId = pr.getId());
     }
 
     public Optional<V2PullRequest> getMostRecentPullRequestForTheCurrentBranch(V2Response response) {
@@ -93,6 +87,7 @@ public class CommentManager {
                 .sorted((p1, p2) -> p1.getCreatedOn().compareTo(p2.getCreatedOn()))
                 .findFirst();
     }
+
 
     /**
      * Gets a list of comments for the given pull request by making a GET request to main.bitbucket's api.
@@ -108,7 +103,7 @@ public class CommentManager {
                     .get(new GenericType<List<Comment>>() {
                     }));
         } else {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
     }
 
