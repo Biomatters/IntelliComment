@@ -13,8 +13,10 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by the Biomatters and the Phyla team for the betterment of mankind.
@@ -122,11 +124,11 @@ public class CommentManager {
      * @param newComment    The comment to post. Only a few fields are needed, see the second constructor.
      */
     public Comment post(int pullRequestId, Comment newComment) {
-        return makeSafeRequest(() -> rootTarget
+        return rootTarget
                 .path(pullRequestId + "")
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                .post(Entity.json(newComment), Comment.class));
+                .post(Entity.json(newComment), Comment.class);
     }
 
     public <T> T makeSafeRequest(Worker<T> worker) {
