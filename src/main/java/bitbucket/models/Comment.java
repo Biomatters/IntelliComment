@@ -2,6 +2,13 @@ package bitbucket.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.swing.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * A bitbucket comment, properties are copied from the v1 documentation.
  *
@@ -32,25 +39,50 @@ public class Comment {
     public Boolean isRepoOwner;
     public Boolean isSpam;
     public String baseRevision;
+    private static AtomicReference<ImageIcon> icon;
+    public List<Comment> children;
 
     public Comment() {
         // Empty for json deserialization.
     }
 
     /**
-     * Whether this is a comment with a line number that is not a reply.
+     * Used for making post requests.
      *
-     * @return
+     * @param id                  The pull request id.
+     * @param content             The comment message content.
+     * @param destinationRevision ???
+     * @param lineTo              optional Start line.
+     * @param lineFrom            optional End line.
      */
-    public boolean isRootComment() {
-        return getLineNumber() == 0;
+    public Comment(int id, String content, String destinationRevision, int lineTo, int lineFrom) {
+        this.pullRequestId = id;
+        this.content = content;
+        this.destinationRevision = destinationRevision;
+        this.lineTo = lineTo;
+        this.lineFrom = lineFrom;
+    }
+
+
+    public List<Comment> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<Comment> children) {
+        this.children = children;
+    }
+
+
+    /**
+     * @return whether this is a comment with a line number - whether it is a leaf node.
+     */
+    public boolean isRoot() {
+        return getLineNumber() != 0;
     }
 
     /**
-     * Returns the given line number. Lines start at index 1 and so 0 represents a comment not attached to a line.
+     * @return the given line number. Lines start at index 1 and so 0 represents a comment not attached to a line.
      * Examples are comments directly in the root of a pull request or replies to comments.
-     *
-     * @return
      */
     public int getLineNumber() {
         return lineFrom != 0 ? lineFrom : lineTo;
@@ -252,5 +284,25 @@ public class Comment {
     @JsonProperty("is_spam")
     public void setIsSpam(Boolean isSpam) {
         this.isSpam = isSpam;
+    }
+
+
+    public ImageIcon getIcon() {
+        if (icon == null) {
+            icon = new AtomicReference<>();
+            Thread iconGetter = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        icon.set(new ImageIcon(new URL(authorInfo.avatar)));
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            iconGetter.start();
+
+        }
+        return icon.get();
     }
 }

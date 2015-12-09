@@ -1,9 +1,14 @@
 package bitbucket;
 
-import java.util.prefs.Preferences;
-
+import bitbucket.models.Comment;
+import bitbucket.models.RefreshRequest;
+import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.Nullable;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import java.util.Date;
 import java.util.prefs.Preferences;
 
@@ -11,40 +16,16 @@ import java.util.prefs.Preferences;
  * Created by the Biomatters and the Webapps Team for the betterment of mankind.
  */
 public class Config {
-    // TODO Where should this stuff be stored? XML of some kind?
-
     public final static String BITBUCKET_URL = "https://bitbucket.org/api";
     public static final int TOKEN_DURATION_MILLIS = 1000 * 60 * 30;
 
-    public static String APP_KEY = "EkdP4yeMRaMKPBLcBv";
-    public static String APP_SECRET = "hRJHdSX4LJyWCsYwyCLetnNUU8Ups4C3";
-
-    public static class User {
-
-        public static String getAccessToken() {
-            return ACCESS_TOKEN;
-        }
-        public static void setAccessToken(String accessToken) {
-            ACCESS_TOKEN = accessToken;
-        }
-
-        public static String ACCESS_TOKEN = "spAcqc1Nj97NU0k3lbZBdD4ym4KQ78cksclOaxoKT-hwCCeeRH8XD_YBIzRJv3yUZhGrRHYzrHpj2EB4iA==";
-
-        public static String getRefreshToken() {
-            return REFRESH_TOKEN;
-        }
-
-        public static void setRefreshToken(String refreshToken) {
-            REFRESH_TOKEN = refreshToken;
-        }
-
-        public static String REFRESH_TOKEN = "J8XkwyCyuMcmrDKsD3";
-
-    }
+    private static String APP_KEY = "EkdP4yeMRaMKPBLcBv";
+    private static String APP_SECRET = "hRJHdSX4LJyWCsYwyCLetnNUU8Ups4C3";
 
     /**
      * saves the access and refresh tokens to preferences
-     * @param accessToken self-explanatory
+     *
+     * @param accessToken  self-explanatory
      * @param refreshToken self-explanatory
      */
     public static void saveUserTokensToPreferences(String accessToken, String refreshToken) {
@@ -66,14 +47,14 @@ public class Config {
     AccessAndRefreshToken loadUserTokensFromPreferences() {
         AccessAndRefreshToken tokens = loadUserTokensFromPreferencesUnvalidated();
         if (tokens.accessToken == null ||
-            tokens.refreshToken == null ||
-            tokens.accessTokenExpiry == null ||
-            tokens.refreshTokenExpiry == null) {
+                tokens.refreshToken == null ||
+                tokens.accessTokenExpiry == null ||
+                tokens.refreshTokenExpiry == null) {
             setAllTokenFieldsEmpty();
             return null;
         }
         if (tokens.accessTokenExpiry.compareTo(new Date()) <= 0 ||
-            tokens.refreshTokenExpiry.compareTo(new Date()) <= 0) {
+                tokens.refreshTokenExpiry.compareTo(new Date()) <= 0) {
             setAllTokenFieldsEmpty();
             return null;
         }
@@ -124,6 +105,81 @@ public class Config {
 
     private static Preferences getPreferences() {
         return Preferences.userNodeForPackage(Config.class);
+    }
+
+    public static String getAppKey() {
+        return APP_KEY;
+    }
+
+    public static void setAppKey(String appKey) {
+        APP_KEY = appKey;
+    }
+
+    public static String getAppSecret() {
+        return APP_SECRET;
+    }
+
+    public static void setAppSecret(String appSecret) {
+        APP_SECRET = appSecret;
+    }
+
+    public static class User {
+
+        private static String ACCESS_TOKEN;
+        private static String REFRESH_TOKEN;
+        private static Date accessTokenExpiry;
+        private static Date refreshTokenExpiry;
+
+        public static String getAccessToken() {
+            if (ACCESS_TOKEN == null) {
+                // Then we need to load the tokens.
+                AccessAndRefreshToken accessAndRefreshToken = loadUserTokensFromPreferences();
+                if (accessAndRefreshToken != null) {
+                    ACCESS_TOKEN = accessAndRefreshToken.accessToken;
+                    REFRESH_TOKEN = accessAndRefreshToken.refreshToken;
+                    accessTokenExpiry = accessAndRefreshToken.accessTokenExpiry;
+                    refreshTokenExpiry = accessAndRefreshToken.refreshTokenExpiry;
+                }
+            }
+
+            if (ACCESS_TOKEN == null) {
+                // Then we need to get a new access token.
+                Auth auth = new Auth();
+            }
+
+            // If expiring in the next 30 minutes, then we need to get a new one.
+            int thirtyMinutes = 30 * 60 * 1000;
+            if (Math.abs(accessTokenExpiry.getTime()-new Date().getTime()) <= thirtyMinutes
+                    && refreshTokenExpiry.compareTo(new Date()) <= 0) {
+                (new Thread() {
+                    @Override
+                    public void run() {
+                        // Create a header of the form "Authorization: Basic {client_id:client_secret}".
+                        byte[] secrets = (APP_KEY + ":" + APP_SECRET).getBytes();
+                        String base64 = Base64.encodeBase64String(secrets);
+
+                        // Request a new access token using our current refresh token.
+                        RefreshRequest refreshRequest = new RefreshRequest(REFRESH_TOKEN);
+                        WebTarget target = ClientBuilder.newClient().target(Config.BITBUCKET_URL);
+                        target
+                                .path("site/oauth2/access_token")
+                                .request(MediaType.APPLICATION_JSON_TYPE)
+                                .header("Authorization", "Basic " + base64)
+                                .post(Entity.json(refreshRequest), Comment.class);
+                    }
+                }).run();
+            }
+
+            return ACCESS_TOKEN;
+        }
+
+        public static void setAccessToken(String accessToken) {
+            ACCESS_TOKEN = accessToken;
+        }
+
+        public static void setRefreshToken(String refreshToken) {
+            REFRESH_TOKEN = refreshToken;
+        }
     }
 
     public static class AccessAndRefreshToken {

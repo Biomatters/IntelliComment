@@ -10,11 +10,15 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
 import java.awt.*;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,10 +28,11 @@ import java.util.regex.Pattern;
 public class Auth {
 
     private static String ACCESS_TOKEN_URL = "https://bitbucket.org/site/oauth2/access_token";
-
+    private static AtomicReference<Boolean> running = new AtomicReference<>();
     Thread listener;
 
     public Auth() {
+        running.set(false);
         // Start server to wait for bitbucket response from the OAuth process.
         authenticateUser();
 
@@ -43,14 +48,12 @@ public class Auth {
         }
     }
 
-    private static boolean running = false;
-
     private void promptUserForCredentials() {
-        // Prevent multiple requests. TODO What's the best way to do this in java? - Current implementation doesn't work.
-        if (!running) {
+        // Prevent multiple requests.
+        if (!running.get()) {
             if (Desktop.isDesktopSupported()) {
                 try {
-                    String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.APP_KEY);
+                    String urlString = String.format("https://bitbucket.org/site/oauth2/authorize?client_id=%s&response_type=code", Config.getAppKey());
                     Desktop.getDesktop().browse(new URI(urlString));
                 } catch (IOException | URISyntaxException e) {
                     e.printStackTrace();
@@ -115,43 +118,37 @@ public class Auth {
         } catch (IOException ignored) {
             // Fail silently, this is only clean up.
         }
-        running = false;
+        running.set(false);
         return code;
     }
 
     private void getAndSaveAccessToken(String code) {
 
-        Config.AccessAndRefreshToken accessAndRefreshToken = Config.loadUserTokensFromPreferences();
-
         String accessToken;
         String refreshToken;
-        if (accessAndRefreshToken == null) {
-            // go get them!
-            Form form = new Form();
-            form.param("grant_type", "authorization_code");
-            form.param("code", code);
+        // go get them!
+        Form form = new Form();
+        form.param("grant_type", "authorization_code");
+        form.param("code", code);
 
-            WebTarget url = ClientBuilder.newClient().target(ACCESS_TOKEN_URL);
-            Invocation.Builder builder = url
-                    .request(MediaType.APPLICATION_JSON_TYPE);
+        WebTarget url = ClientBuilder.newClient().target(ACCESS_TOKEN_URL);
+        Invocation.Builder builder = url
+                .request(MediaType.APPLICATION_JSON_TYPE);
 
-            // Create a header of the form "Authorization: Basic {client_id:client_secret}".
-            byte[] secrets = (Config.APP_KEY + ":" + Config.APP_SECRET).getBytes();
-            String base64 = Base64.encodeBase64String(secrets);
+        // Create a header of the form "Authorization: Basic {client_id:client_secret}".
+        byte[] secrets = (Config.getAppKey() + ":" + Config.getAppSecret()).getBytes();
+        String base64 = Base64.encodeBase64String(secrets);
 
-            AccessTokenResponse response = builder
-                    .header("Authorization", "Basic " + base64)
-                    .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), AccessTokenResponse.class);
-            accessToken = response.getAccessToken();
-            refreshToken = response.getRefreshToken();
+        AccessTokenResponse response = builder
+                .header("Authorization", "Basic " + base64)
+                .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE), AccessTokenResponse.class);
+        accessToken = response.getAccessToken();
+        refreshToken = response.getRefreshToken();
 
-            Config.saveUserTokensToPreferences(accessToken, refreshToken);
-        } else {
-            accessToken = accessAndRefreshToken.accessToken;
-            refreshToken = accessAndRefreshToken.refreshToken;
-        }
+        // Persist the tokens.
+        Config.saveUserTokensToPreferences(accessToken, refreshToken);
 
-        // Save the user access and refresh token for use later.
+        // Now save the user access and refresh token in memory for use later.
         Config.User.setAccessToken(accessToken);
         Config.User.setRefreshToken(refreshToken);
     }
