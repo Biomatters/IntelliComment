@@ -11,6 +11,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ public class CommentManager {
         this.repoOwner = repoOwner;
         this.repoSlug = repoSlug;
 
-        this.pullRequestId = getPullRequestId();
+        getPullRequestId();
     }
 
     /**
@@ -46,7 +47,7 @@ public class CommentManager {
      * @return the complete url.
      */
     public String composePullRequestPath() {
-        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, getPullRequestId());
+        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, pullRequestId);
     }
 
     /**
@@ -59,33 +60,28 @@ public class CommentManager {
      * @return the current pull request's id, or -1 if there is no pull request for this branch
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-423626332.html#pullrequestsResource-GETalistofopenpullrequests
      */
-    int getPullRequestId() {
-        if (pullRequestId == -1) {
-            (new Thread() {
-                @Override
-                public void run() {
-                    V2Response response = rootTarget
-                            .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
-                            .request(MediaType.APPLICATION_JSON_TYPE)
-                            .header("Authorization", String.format("Bearer %s", Config.User.getAccessToken()))
-                            .get(V2Response.class);
+    private void getPullRequestId() {
+//        if (pullRequestId == -1) {
+//            (new Thread() {
+//                @Override
+//                public void run() {
+        V2Response response = rootTarget
+                .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .header("Authorization", String.format("Bearer %s", Config.User.getAccessToken()))
+                .get(V2Response.class);
 
-                    GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
-                    if (gitStatusInfo != null) {
-                        for (V2PullRequest pullRequest : response.getValues()) {
-                            if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
-                                pullRequestId = pullRequest.getId();
-                                break;
-                            }
-                        }
-                    }
+        GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
+        if (gitStatusInfo != null) {
+            for (V2PullRequest pullRequest : response.getValues()) {
+                if (pullRequest.getSource().getBranch().getName().equals(gitStatusInfo.branch)) {
+                    pullRequestId = pullRequest.getId();
+                    break;
                 }
-            }).run();
-            return -1;
-        } else {
-            return pullRequestId;
+            }
         }
-
+//                }
+//            })
     }
 
     /**
@@ -103,7 +99,7 @@ public class CommentManager {
                     .get(new GenericType<List<Comment>>() {
                     });
         } else {
-            return null;
+            return Collections.emptyList();
         }
     }
 

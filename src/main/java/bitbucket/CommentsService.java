@@ -5,7 +5,6 @@ import tree.GitStatusInfo;
 import tree.IntellijUtilities;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -19,9 +18,14 @@ import java.util.stream.Collectors;
 public class CommentsService {
 
     private static final AtomicReference<List<Comment>> COMMENTS_REF = new AtomicReference<>(null);
+    List<Comment> raw;
+    private CommentManager commentManager;
+    private String projectName = IntellijUtilities.getCurrentProject().getBaseDir().toString();
 
-    // This will get called when an instance of this class is instantiated via reflection.
+    // The block below will get called when an instance of this class is instantiated via reflection.
     {
+        GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
+        commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner);
         Thread pollingThread = new Thread(() -> {
             while (true) {
                 refreshComments();
@@ -46,8 +50,6 @@ public class CommentsService {
         return COMMENTS_REF.get();
     }
 
-    private String projectName = IntellijUtilities.getCurrentProject().getBaseDir().toString();
-
     /**
      * @param fileName The fully defined file name (ie include path: "/src/main/java/bitbucket/myClass.java" etc)
      * @return all comments for the given file name.
@@ -60,47 +62,16 @@ public class CommentsService {
 
         final String name = fileName.replace(projectName, "").substring(1);
 
-        List<Comment> filtered = comments.stream().filter(new Predicate<Comment>() {
-            @Override
-            public boolean test(Comment comment) {
-                return (comment.getFilename() != null)
-                        && comment.getFilename().contains(name);
-            }
-        }).collect(Collectors.toList());
-
-        return filtered;
-
-    }
-
-    public List<Comment> getCommentsAndRefresh() {
-        refreshComments();
-        return getComments();
+        return comments.stream().filter(comment -> (comment.getFilename() != null)
+                && comment.getFilename().contains(name)).collect(Collectors.toList());
     }
 
     private void refreshComments() {
-        // This needs to be done in a separate thread as Swing stuff will be coming through here
-        Thread commentGetterThread = new Thread() {
-            @Override
-            public void run() {
-                GitStatusInfo gitStatusInfo = IntellijUtilities.getGitStatusInfo();
-                List<Comment> flat;
-                if (gitStatusInfo != null) {
-                    CommentManager commentManager = new CommentManager(gitStatusInfo.repoSlug, gitStatusInfo.repoOwner);
-                    flat = commentManager.get();
-                } else {
-                    flat = Collections.emptyList();
-                }
-                raw = flat;
-                List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
-                COMMENTS_REF.set(hierarchy);
-            }
-        };
-        commentGetterThread.start();
-
-
+        List<Comment> flat = commentManager.get();
+        raw = flat;
+        List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
+        COMMENTS_REF.set(hierarchy);
     }
-
-    List<Comment> raw;
 
     /**
      * Builds a list of comments from a flat structure into a hierarchy with children.
