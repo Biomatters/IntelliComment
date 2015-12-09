@@ -12,6 +12,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,6 +29,7 @@ public class CommentManager {
     private String branch;
     private String repoOwner;
     private String repoSlug;
+    private int pullRequestId;
 
     public CommentManager() {
         // TODO Extract rootTarget out when we add DI.
@@ -37,7 +39,20 @@ public class CommentManager {
             this.repoOwner = current.repoOwner;
             this.repoSlug = current.repoSlug;
             this.branch = current.branch;
+            refreshPullRequestId();
         }
+    }
+
+    /**
+     * Sets the git branch and updates the pull request id.
+     * TODO Call this method when IntelliJ's branch chooser fires (ie when the user changes branches).
+     *
+     * @param branch the current git branch.
+     */
+    public void setBranch(String branch) {
+        this.branch = branch;
+        // Now we need to see if there is any open pull requests for this branch.
+        refreshPullRequestId();
     }
 
     /**
@@ -46,7 +61,7 @@ public class CommentManager {
      * @return the complete url.
      */
     public String composePullRequestPath() {
-        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, getPullRequestId());
+        return String.format(PULL_REQUEST_PATH, repoOwner, repoSlug, pullRequestId);
     }
 
     /**
@@ -58,18 +73,14 @@ public class CommentManager {
      * @return the current pull request's id, or -1 if there is no pull request for this branch
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-423626332.html#pullrequestsResource-GETalistofopenpullrequests
      */
-    int getPullRequestId() {
+    private void refreshPullRequestId() {
         V2Response response = makeSafeRequest(() -> rootTarget
                 .path(String.format("/2.0/repositories/%s/%s/pullrequests/", repoOwner, repoSlug))
                 .request(MediaType.APPLICATION_JSON_TYPE)
                 .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
                 .get(V2Response.class));
         Optional<V2PullRequest> current = getMostRecentPullRequestForTheCurrentBranch(response);
-        if (current.isPresent()) {
-            return current.get().getId();
-        } else {
-            return -1;
-        }
+        pullRequestId = current.isPresent() ? current.get().getId() : -1;
     }
 
     public Optional<V2PullRequest> getMostRecentPullRequestForTheCurrentBranch(V2Response response) {
@@ -87,12 +98,16 @@ public class CommentManager {
      * @see https://confluence.atlassian.com/bitbucket/pullrequests-resource-1-0-296095210.html#pullrequestsResource1.0-GETalistofapullrequestcommentsRedDEPRECATED
      */
     public List<Comment> get() {
-        return makeSafeRequest(() -> rootTarget
-                .path(composePullRequestPath())
-                .request(MediaType.APPLICATION_JSON_TYPE)
-                .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
-                .get(new GenericType<List<Comment>>() {
-                }));
+        if (pullRequestId != -1) {
+            return makeSafeRequest(() -> rootTarget
+                    .path(composePullRequestPath())
+                    .request(MediaType.APPLICATION_JSON_TYPE)
+                    .header("Authorization", String.format("Bearer %s", Config.User.ACCESS_TOKEN))
+                    .get(new GenericType<List<Comment>>() {
+                    }));
+        } else {
+            return new ArrayList<>();
+        }
     }
 
     /**

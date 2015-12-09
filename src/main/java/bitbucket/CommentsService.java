@@ -1,6 +1,7 @@
 package bitbucket;
 
 import bitbucket.models.Comment;
+import com.intellij.openapi.application.ApplicationManager;
 import tree.IntellijUtilities;
 
 import java.util.ArrayList;
@@ -18,11 +19,14 @@ public class CommentsService {
     private static final AtomicReference<List<Comment>> COMMENTS_REF = new AtomicReference<>(null);
     List<Comment> raw;
     private CommentManager commentManager;
+    private Updates updates;
     private String projectName = IntellijUtilities.getCurrentProject().getBaseDir().toString();
 
     {
-        // The polling thread will get started when an instance of this class is instantiated via reflection.
-        Thread pollingThread = new Thread(() -> {
+        // IntelliJ recommends using "executeOnPooledThread", rather than "Thread".
+        // @see http://stackoverflow.com/questions/18725340/create-a-background-task-in-intellij-plugin
+        ApplicationManager.getApplication().executeOnPooledThread((Runnable) () -> {
+            // The polling thread will get started when an instance of this class is instantiated via reflection.
             while (true) {
                 refreshComments();
                 try {
@@ -32,8 +36,6 @@ public class CommentsService {
                 }
             }
         });
-        pollingThread.setDaemon(true);
-        pollingThread.start();
     }
 
     public List<Comment> getComments() {
@@ -63,18 +65,16 @@ public class CommentsService {
     }
 
     private void refreshComments() {
-        // This needs to be done in a separate thread as Swing stuff will be coming through here
-        Thread commentGetterThread = new Thread() {
-            @Override
-            public void run() {
-                commentManager = new CommentManager();
-                List<Comment> flat = commentManager.get();
-                raw = flat;
-                List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
-                COMMENTS_REF.set(hierarchy);
-            }
-        };
-        commentGetterThread.start();
+//        // This needs to be done in a separate thread as Swing stuff will be coming through here
+//        Thread commentGetterThread = new Thread() {
+//            @Override
+//            public void run() {
+        commentManager = new CommentManager();
+        List<Comment> flat = commentManager.get();
+        raw = flat;
+        List<Comment> hierarchy = buildCommentHierachy(flat.stream().filter(Comment::isRoot).collect(Collectors.toList()));
+        COMMENTS_REF.set(hierarchy);
+        updates.commentsUpdated(hierarchy);
     }
 
     /**
@@ -96,5 +96,9 @@ public class CommentsService {
 
     private List<Comment> getChildrenOfComment(Comment parent) {
         return raw.stream().filter(comment -> comment.getParentId() == parent.getCommentId()).collect(Collectors.toList());
+    }
+
+    public interface Updates {
+        void commentsUpdated(List<Comment> comments);
     }
 }

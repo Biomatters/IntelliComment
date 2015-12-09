@@ -4,6 +4,9 @@ package tree;
 import com.intellij.ide.DataManager;
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.AbstractVcs;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -26,10 +29,20 @@ import java.util.regex.Pattern;
  */
 public class IntellijUtilities {
 
-    public static Project getCurrentProject() {
-        return CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext());
-    }
+    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://[^@]*@bitbucket\\.org/(.*)/([^/]*)\\.git");
 
+    public static Project getCurrentProject() {
+
+        try {
+            final Project[] current = new Project[1];
+            // PROJECT.getData has to be executed on the main thread.
+            Application application = ApplicationManager.getApplication();
+            application.invokeAndWait(() -> current[0] = CommonDataKeys.PROJECT.getData(DataManager.getInstance().getDataContext()), ModalityState.NON_MODAL);
+            return current[0];
+        } catch (Throwable e) {
+            throw new RuntimeException();
+        }
+    }
 
     public static String getRelativePath(VirtualFile parent, VirtualFile child) {
         if (child.getPath().startsWith(parent.getPath())) {
@@ -74,8 +87,6 @@ public class IntellijUtilities {
 
         return new GitStatusInfo(repositorySlug, repoOwner, branch);
     }
-
-    private static final Pattern BITBUCKET_REPO_PATTERN = Pattern.compile(".*://[^@]*@bitbucket\\.org/(.*)/([^/]*)\\.git");
 
     /**
      * @return the current user name, if discoverable, else null
@@ -174,5 +185,10 @@ public class IntellijUtilities {
             return GitBranchUtil.getDisplayableBranchText(gitRepository);
         }
         return null;
+    }
+
+    public static Boolean isInProject(VirtualFile file) {
+        Project current = IntellijUtilities.getCurrentProject();
+        return file.getPath().startsWith(current.getBaseDir().getPath());
     }
 }

@@ -14,6 +14,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import org.jetbrains.annotations.NotNull;
+import tree.IntellijUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,12 +25,36 @@ import java.util.List;
 /**
  * A window for rendering comments - follows the selected text editor, and tries to match its scroll position.
  */
-public class CommentsToolWindowRenderer extends JComponent {
+public class CommentsToolWindowRenderer extends JComponent implements CommentsService.Updates {
 
 
     private Editor editor;
     private CommentLayouter commentLayouter;
+    PropertyChangeListener iconChangeListener = evt -> refreshLayout();
     private ToolWindow toolWindow;
+    private Thread centeringThread;
+    private CaretListener caretListener = new CaretListener() {
+        @Override
+        public void caretPositionChanged(CaretEvent caretEvent) {
+            if (commentLayouter.commentExistsForLine(caretEvent.getNewPosition().line + 1)) {
+                centerForLine(caretEvent.getNewPosition().line + 1);
+            }
+            commentLayouter.updateCommentProperties(caretEvent.getNewPosition().line + 1);
+            repaint();
+        }
+
+        @Override
+        public void caretAdded(CaretEvent caretEvent) {
+
+        }
+
+        @Override
+        public void caretRemoved(CaretEvent caretEvent) {
+
+        }
+    };
+    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> repaint();
+    private int lastWidth = 0;
 
     public CommentsToolWindowRenderer(ToolWindow toolWindow, FileEditorManager editorManager) {
         this.toolWindow = toolWindow;
@@ -53,29 +78,6 @@ public class CommentsToolWindowRenderer extends JComponent {
         });
     }
 
-    PropertyChangeListener iconChangeListener = evt -> refreshLayout();
-
-    private CaretListener caretListener = new CaretListener() {
-        @Override
-        public void caretPositionChanged(CaretEvent caretEvent) {
-            if (commentLayouter.commentExistsForLine(caretEvent.getNewPosition().line + 1)) {
-                centerForLine(caretEvent.getNewPosition().line + 1);
-            }
-            commentLayouter.updateCommentProperties(caretEvent.getNewPosition().line + 1);
-            repaint();
-        }
-
-        @Override
-        public void caretAdded(CaretEvent caretEvent) {
-
-        }
-
-        @Override
-        public void caretRemoved(CaretEvent caretEvent) {
-
-        }
-    };
-
     private void refreshLayout() {
         SwingUtilities.invokeLater(() -> {
             if (commentLayouter != null) {
@@ -84,8 +86,6 @@ public class CommentsToolWindowRenderer extends JComponent {
             }
         });
     }
-
-    private Thread centeringThread;
 
     private void centerForLine(int line) {
         if (centeringThread != null && centeringThread.isAlive()) {
@@ -106,10 +106,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         centeringThread.start();
     }
 
-    private VisibleAreaListener visibleAreaListener = visibleAreaEvent -> repaint();
-
     private void setEditor(Editor ed) {
-        if(editor != null) {
+        if (editor != null) {
             editor.getScrollingModel().removeVisibleAreaListener(visibleAreaListener);
             editor.getCaretModel().removeCaretListener(caretListener);
         }
@@ -122,8 +120,6 @@ public class CommentsToolWindowRenderer extends JComponent {
         setPreferredSize(new Dimension(100 /*default (basically min) width*/, 100/*editor.getContentComponent().getHeight()*/));
         this.invalidate();
     }
-
-    private int lastWidth = 0;
 
     private int getYOffset() {
         // This is a bit hacky but ensures that we take any static header components into account (as
@@ -144,8 +140,8 @@ public class CommentsToolWindowRenderer extends JComponent {
         Graphics2D g2 = (Graphics2D) g;
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.translate(0, -getYOffset());
-        if(editor != null) {
-            for(RenderableComment c : commentLayouter.getRenderableComments()) {
+        if (editor != null) {
+            for (RenderableComment c : commentLayouter.getRenderableComments()) {
                 c.paint(g2, getWidth());
             }
         }
@@ -160,10 +156,16 @@ public class CommentsToolWindowRenderer extends JComponent {
 
     private List<Comment> getCommentsForFile(Editor editor) {
         VirtualFile file = FileDocumentManager.getInstance().getFile(editor.getDocument());
-        if (file != null) {
+        if (file != null && IntellijUtilities.isInProject(file)) {
             String fileName = file.toString();
-            return ServiceManager.getService(CommentsService.class).getComments(fileName);
+            CommentsService x = ServiceManager.getService(CommentsService.class);
+            return x.getComments(fileName);
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public void commentsUpdated(List<Comment> comments) {
+        repaint();
     }
 }
