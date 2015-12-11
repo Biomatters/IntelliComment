@@ -2,6 +2,9 @@
 
 Evolab project to view and post BitBucket pull request comments in IntelliJ.
 
+### Licensing ###
+All files in this project are under the [GPL License](http://www.gnu.org/licenses/gpl-howto.html). We have yet to implement the header comments to each file.
+
 ### Requirements ###
 
    * An IDE of your preference.
@@ -23,7 +26,7 @@ Hacky things that you have to do until gradle is nicely integrated. TODO Fix thi
     * Expand plugins > git4idea\lib
     * Select all the jars in there and add them, click apply
 
-### Who do I talk to? ###
+### Package M ###
 
 1. Maybe run `gradle compileJava`. This will fail but it will get the dependencies. You can run this task from the gradle sidebar > other > compileJava.
 1. Navigate to project structure / modules, changed `Use module compile...` to `Inherit compiler...`.
